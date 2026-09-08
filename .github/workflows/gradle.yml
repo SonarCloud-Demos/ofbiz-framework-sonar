@@ -90,6 +90,9 @@ jobs:
     - name: Load all plugins
       run: ./pullAllPluginsSource.sh
 
+    - name: Create runtime directories
+      run: mkdir -p runtime/tmp runtime/tempfiles
+
     - name: Build with Gradle
       run: ./gradlew check javadoc -PdisableJavadocExternalLinks
 

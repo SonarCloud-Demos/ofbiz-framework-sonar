@@ -36,6 +36,8 @@ jobs:
         run: chmod +x gradlew gradle/init-gradle-wrapper.sh
       - name: Initialize Gradle wrapper
         run: ./gradle/init-gradle-wrapper.sh
+      - name: Create runtime directories
+        run: mkdir -p runtime/tmp runtime/tempfiles
       - name: Build and analyze pull request
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
