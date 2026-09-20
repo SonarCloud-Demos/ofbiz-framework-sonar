@@ -1,0 +1,34 @@
+import org.gradle.api.credentials.HttpHeaderCredentials
+import org.gradle.authentication.http.HttpHeaderAuthentication
+
+def artifactoryUrl = 'https://repox.jfrog.io/artifactory/public'
+def tokenFile = System.getenv('ARTIFACTORY_TOKEN_FILE')
+def token = tokenFile ? file(tokenFile).text.trim() : null
+token = token ?: System.getenv('ARTIFACTORY_ACCESS_TOKEN')
+token = token ?: System.getenv('ARTIFACTORY_PRIVATE_READER_TOKEN')
+
+if (!token) {
+    throw new GradleException('An Artifactory access token is required')
+}
+
+def configureRepository = { repository ->
+    repository.name = 'approvedArtifactory'
+    repository.url = uri(artifactoryUrl)
+    repository.credentials(HttpHeaderCredentials) {
+        name = 'Authorization'
+        value = "Bearer ${token}"
+    }
+    repository.authentication {
+        header(HttpHeaderAuthentication)
+    }
+}
+
+settingsEvaluated { settings ->
+    settings.pluginManagement.repositories.clear()
+    settings.pluginManagement.repositories.maven(configureRepository)
+}
+
+allprojects { project ->
+    project.repositories.clear()
+    project.repositories.maven(configureRepository)
+}

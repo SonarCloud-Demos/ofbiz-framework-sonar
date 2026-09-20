@@ -9,11 +9,13 @@
 - `build.yml`
   SonarQube Cloud pull request analysis
   → Trigger: PR targeting `trunk` and `feat-*`
+  → Tests both modern Phase 1 services through the approved Artifactory repository.
   → Passes the PR number, source branch, and base branch explicitly so the PR baseline is the target branch, normally `trunk`.
 
 - `sonarqube-branch.yml`
   SonarQube Cloud branch analysis
   → Trigger: push on `trunk` and `feat-*`
+  → Tests both modern Phase 1 services through the approved Artifactory repository.
 
 - `docker-image.yml`  
   Build and push images to `ghcr.io/apache/ofbiz`  
@@ -36,3 +38,7 @@ New branches inherit workflow files from `trunk` at creation time.
 ## SonarQube Demo Policy
 
 Competing repository analysis is intentionally disabled for this demo branch set. Do not add Dependabot, CodeQL, Dependency Review, OpenSSF Scorecard, or SARIF uploads unless the SonarQube demo scope changes.
+
+Both SonarQube workflows require `ARTIFACTORY_PRIVATE_READER_TOKEN` as a GitHub Actions secret.
+The token is passed only as an environment variable to `gradle/modern-artifactory.init.gradle`;
+it must never be committed, echoed, or supplied as a command-line argument.

@@ -1,0 +1,142 @@
+name: erp-local
+
+services:
+  legacy-ofbiz-db:
+    image: ${POSTGRES_IMAGE:?Set POSTGRES_IMAGE to the approved internal PostgreSQL image}
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD}
+      OFBIZ_POSTGRES_OFBIZ_DB: ${OFBIZ_DB_NAME:-ofbizmaindb}
+      OFBIZ_POSTGRES_OFBIZ_USER: ${OFBIZ_DB_USER:-ofbiz}
+      OFBIZ_POSTGRES_OFBIZ_PASSWORD: ${OFBIZ_DB_PASSWORD:?Set OFBIZ_DB_PASSWORD}
+      OFBIZ_POSTGRES_OLAP_DB: ${OFBIZ_OLAP_DB_NAME:-ofbizolapdb}
+      OFBIZ_POSTGRES_OLAP_USER: ${OFBIZ_OLAP_DB_USER:-ofbizolap}
+      OFBIZ_POSTGRES_OLAP_PASSWORD: ${OFBIZ_OLAP_DB_PASSWORD:?Set OFBIZ_OLAP_DB_PASSWORD}
+      OFBIZ_POSTGRES_TENANT_DB: ${OFBIZ_TENANT_DB_NAME:-ofbiztenantdb}
+      OFBIZ_POSTGRES_TENANT_USER: ${OFBIZ_TENANT_DB_USER:-ofbiztenant}
+      OFBIZ_POSTGRES_TENANT_PASSWORD: ${OFBIZ_TENANT_DB_PASSWORD:?Set OFBIZ_TENANT_DB_PASSWORD}
+    ports:
+      - "15432:5432"
+    volumes:
+      - legacy-db-data:/var/lib/postgresql/data
+      - ../docker/examples/postgres-demo/postgres-initdb.d:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  legacy-ofbiz-app:
+    image: erp-local-legacy-ofbiz-app:phase1
+    build:
+      context: ..
+      dockerfile: local-dev/legacy/Dockerfile
+      args:
+        LEGACY_OFBIZ_IMAGE: ${LEGACY_OFBIZ_IMAGE:?Set LEGACY_OFBIZ_IMAGE to the approved internal OFBiz image}
+        NODE_BUILD_IMAGE: ${NODE_BUILD_IMAGE:?Set NODE_BUILD_IMAGE to the approved internal Node image}
+      secrets:
+        - npmrc
+        - corporate_ca
+    entrypoint: ["/local-dev/legacy-entrypoint.sh"]
+    command: ["bin/ofbiz"]
+    restart: unless-stopped
+    depends_on:
+      legacy-ofbiz-db:
+        condition: service_healthy
+    environment:
+      OFBIZ_DATA_LOAD: demo
+      OFBIZ_HOST: localhost
+      OFBIZ_CONTENT_URL_PREFIX: https://localhost:18443
+      OFBIZ_POSTGRES_HOST: legacy-ofbiz-db
+      OFBIZ_POSTGRES_OFBIZ_DB: ${OFBIZ_DB_NAME:-ofbizmaindb}
+      OFBIZ_POSTGRES_OFBIZ_USER: ${OFBIZ_DB_USER:-ofbiz}
+      OFBIZ_POSTGRES_OFBIZ_PASSWORD: ${OFBIZ_DB_PASSWORD:?Set OFBIZ_DB_PASSWORD}
+      OFBIZ_POSTGRES_OLAP_DB: ${OFBIZ_OLAP_DB_NAME:-ofbizolapdb}
+      OFBIZ_POSTGRES_OLAP_USER: ${OFBIZ_OLAP_DB_USER:-ofbizolap}
+      OFBIZ_POSTGRES_OLAP_PASSWORD: ${OFBIZ_OLAP_DB_PASSWORD:?Set OFBIZ_OLAP_DB_PASSWORD}
+      OFBIZ_POSTGRES_TENANT_DB: ${OFBIZ_TENANT_DB_NAME:-ofbiztenantdb}
+      OFBIZ_POSTGRES_TENANT_USER: ${OFBIZ_TENANT_DB_USER:-ofbiztenant}
+      OFBIZ_POSTGRES_TENANT_PASSWORD: ${OFBIZ_TENANT_DB_PASSWORD:?Set OFBIZ_TENANT_DB_PASSWORD}
+      OFBIZ_SKIP_DB_DRIVER_DOWNLOAD: "true"
+    ports:
+      - "18443:8443"
+    volumes:
+      - legacy-ofbiz-runtime:/ofbiz/runtime
+      - legacy-ofbiz-config:/ofbiz/config
+      - ./legacy-entrypoint.sh:/local-dev/legacy-entrypoint.sh:ro
+
+  modern-accounting-invoice-service:
+    image: erp-local-modern-accounting-invoice-service:latest
+    build:
+      context: ..
+      dockerfile: services/accounting-invoice-service/Dockerfile
+      args:
+        GRADLE_BUILD_IMAGE: ${GRADLE_BUILD_IMAGE:?Set GRADLE_BUILD_IMAGE to the approved internal Gradle image}
+        JAVA_RUNTIME_IMAGE: ${JAVA_RUNTIME_IMAGE:?Set JAVA_RUNTIME_IMAGE to the approved internal Java runtime image}
+      secrets:
+        - artifactory_token
+    restart: unless-stopped
+    depends_on:
+      legacy-ofbiz-db:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: "8080"
+      OFBIZ_JDBC_URL: jdbc:postgresql://legacy-ofbiz-db:5432/${OFBIZ_DB_NAME:-ofbizmaindb}
+      OFBIZ_DB_USER: ${OFBIZ_DB_USER:-ofbiz}
+      OFBIZ_DB_PASSWORD: ${OFBIZ_DB_PASSWORD:?Set OFBIZ_DB_PASSWORD}
+    ports:
+      - "18106:8080"
+
+  modern-notification-service:
+    image: erp-local-modern-notification-service:latest
+    build:
+      context: ..
+      dockerfile: services/notification-service/Dockerfile
+      args:
+        GRADLE_BUILD_IMAGE: ${GRADLE_BUILD_IMAGE:?Set GRADLE_BUILD_IMAGE to the approved internal Gradle image}
+        JAVA_RUNTIME_IMAGE: ${JAVA_RUNTIME_IMAGE:?Set JAVA_RUNTIME_IMAGE to the approved internal Java runtime image}
+      secrets:
+        - artifactory_token
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: "8080"
+    ports:
+      - "18107:8080"
+
+  modern-gateway:
+    image: erp-local-modern-gateway:latest
+    build:
+      context: ..
+      dockerfile: local-dev/gateway/Dockerfile
+      args:
+        GATEWAY_BASE_IMAGE: ${GATEWAY_BASE_IMAGE:?Set GATEWAY_BASE_IMAGE to the approved internal Nginx image}
+    restart: unless-stopped
+    depends_on:
+      legacy-ofbiz-app:
+        condition: service_started
+      modern-accounting-invoice-service:
+        condition: service_healthy
+      modern-notification-service:
+        condition: service_healthy
+    ports:
+      - "18080:443"
+    secrets:
+      - gateway_tls_cert
+      - gateway_tls_key
+
+secrets:
+  artifactory_token:
+    file: ${ARTIFACTORY_TOKEN_FILE:?Set ARTIFACTORY_TOKEN_FILE to a local token file}
+  npmrc:
+    file: ${NPM_CONFIG_USERCONFIG:?Set NPM_CONFIG_USERCONFIG to the host npm configuration}
+  corporate_ca:
+    file: ${CORPORATE_CA_FILE:?Set CORPORATE_CA_FILE to the corporate CA certificate}
+  gateway_tls_cert:
+    file: ${LOCAL_TLS_CERT_FILE:?Set LOCAL_TLS_CERT_FILE to the local certificate}
+  gateway_tls_key:
+    file: ${LOCAL_TLS_KEY_FILE:?Set LOCAL_TLS_KEY_FILE to the local private key}
+
+volumes:
+  legacy-db-data:
+  legacy-ofbiz-runtime:
+  legacy-ofbiz-config:

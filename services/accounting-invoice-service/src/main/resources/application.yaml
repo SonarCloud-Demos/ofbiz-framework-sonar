@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: modern-accounting-invoice-service
+  datasource:
+    url: ${OFBIZ_JDBC_URL:jdbc:postgresql://localhost:15432/ofbizmaindb}
+    username: ${OFBIZ_DB_USER:ofbiz}
+    password: ${OFBIZ_DB_PASSWORD:}
+    # Phase 1 permits only the narrowly scoped invoice-header writes exposed by this service.
+    hikari:
+      read-only: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+server:
+  port: ${SERVER_PORT:18106}

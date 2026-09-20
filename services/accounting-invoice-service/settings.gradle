@@ -1,0 +1,8 @@
+pluginManagement {
+    repositories {
+        // Intentionally empty. The approved Artifactory plugin repository is injected by the
+        // machine- or CI-provided Gradle init script described in docs/migration/npm-config.md.
+    }
+}
+
+rootProject.name = 'accounting-invoice-service'
