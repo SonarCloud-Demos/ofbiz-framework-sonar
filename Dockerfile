@@ -18,7 +18,16 @@
 # under the License.
 #####################################################################
 
-FROM eclipse-temurin:17@sha256:e8d451f3b5aa6422c2b00bb913cb8d37a55a61934259109d945605c5651de9a6 AS builder
+ARG THEME_NODE_IMAGE
+ARG OFBIZ_JAVA_IMAGE
+FROM ${THEME_NODE_IMAGE} AS theme-assets
+WORKDIR /assets
+COPY themes/common-theme/webapp/common-theme/js/package.json themes/common-theme/webapp/common-theme/js/package-lock.json ./
+RUN --mount=type=secret,id=npmrc,target=/root/.npmrc,required=true \
+    --mount=type=secret,id=corporate_ca,target=/run/secrets/corporate-ca.pem,required=true \
+    NODE_EXTRA_CA_CERTS=/run/secrets/corporate-ca.pem npm ci --ignore-scripts
+
+FROM ${OFBIZ_JAVA_IMAGE} AS builder
 
 # Git is used for various OFBiz build tasks.
 RUN apt-get update \
@@ -47,6 +56,8 @@ COPY lib/ lib/
 # We use a regex to match the plugins directory to avoid a build error when the directory doesn't exist.
 COPY plugin[s]/ plugins/
 COPY themes/ themes/
+COPY --from=theme-assets /assets/node_modules \
+    themes/common-theme/webapp/common-theme/js/node_modules/
 COPY APACHE2_HEADER build.gradle common.gradle gradle.properties NOTICE settings.gradle dependencies.gradle test-reports.gradle .
 
 # Build OFBiz while mounting a gradle cache
@@ -56,7 +67,7 @@ RUN --mount=type=cache,id=gradle-cache,sharing=locked,target=/root/.gradle \
 
 ###################################################################################
 
-FROM eclipse-temurin:17@sha256:e8d451f3b5aa6422c2b00bb913cb8d37a55a61934259109d945605c5651de9a6 AS runtimebase
+FROM ${OFBIZ_JAVA_IMAGE} AS runtimebase
 
 # xsltproc is used to disable OFBiz components during first run.
 RUN apt-get update \

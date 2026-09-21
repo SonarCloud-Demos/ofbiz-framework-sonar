@@ -1,0 +1,13 @@
+pluginManagement {
+    repositories {
+        maven {
+            def repositoryUrl = System.getenv('ARTIFACTORY_GRADLE_PLUGIN_URL')
+            if (!repositoryUrl) {
+                throw new GradleException('ARTIFACTORY_GRADLE_PLUGIN_URL must identify the approved plugin repository')
+            }
+            url = uri(repositoryUrl)
+        }
+    }
+}
+
+rootProject.name = 'accounting-invoice-service'

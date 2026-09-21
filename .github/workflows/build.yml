@@ -41,8 +41,11 @@ jobs:
       - name: Build and analyze pull request
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PR_KEY: ${{ github.event.pull_request.number }}
+          SONAR_PR_BRANCH: ${{ github.head_ref }}
+          SONAR_PR_BASE: ${{ github.base_ref }}
         run: >
-          ./gradlew build sonar --info
-          -Dsonar.pullrequest.key=${{ github.event.pull_request.number }}
-          -Dsonar.pullrequest.branch=${{ github.head_ref }}
-          -Dsonar.pullrequest.base=${{ github.base_ref }}
+          ./gradlew check javadoc sonar --info -PdisableJavadocExternalLinks
+          -Dsonar.pullrequest.key="$SONAR_PR_KEY"
+          -Dsonar.pullrequest.branch="$SONAR_PR_BRANCH"
+          -Dsonar.pullrequest.base="$SONAR_PR_BASE"

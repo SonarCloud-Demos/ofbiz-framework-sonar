@@ -1,0 +1,74 @@
+services:
+  legacy-ofbiz-db:
+    image: ${INTERNAL_POSTGRES_IMAGE:?Set INTERNAL_POSTGRES_IMAGE to the approved pinned PostgreSQL image}
+    env_file:
+      - ../docker/examples/postgres-demo/postgres.env
+      - ../docker/examples/postgres-demo/ofbiz-postgres.env
+    volumes:
+      - ../docker/examples/postgres-demo/postgres-initdb.d:/docker-entrypoint-initdb.d:ro
+      - legacy-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  legacy-ofbiz-app:
+    build:
+      context: ..
+      target: runtime
+      secrets: [npmrc, corporate_ca]
+      args:
+        THEME_NODE_IMAGE: ${INTERNAL_NODE_IMAGE:?Set INTERNAL_NODE_IMAGE to the approved pinned Node image}
+        OFBIZ_JAVA_IMAGE: ${INTERNAL_JAVA_IMAGE:?Set INTERNAL_JAVA_IMAGE to the approved pinned Java image}
+    depends_on:
+      legacy-ofbiz-db:
+        condition: service_healthy
+    env_file: ../docker/examples/postgres-demo/ofbiz-postgres.env
+    environment:
+      OFBIZ_POSTGRES_HOST: legacy-ofbiz-db
+      OFBIZ_DATA_LOAD: demo
+      OFBIZ_HOST: localhost
+      OFBIZ_CONTENT_URL_PREFIX: https://localhost:18443
+    ports:
+      - "18443:8443"
+    volumes:
+      - ./ofbiz-hooks:/docker-entrypoint-hooks/after-config-applied.d:ro
+
+  modern-accounting-invoice-service:
+    build:
+      context: ..
+      dockerfile: services/accounting-invoice-service/Dockerfile
+      secrets: [gradle_init]
+      args:
+        MODERN_JDK_IMAGE: ${INTERNAL_JDK_IMAGE:?Set INTERNAL_JDK_IMAGE to the approved pinned JDK image}
+        MODERN_JRE_IMAGE: ${INTERNAL_JRE_IMAGE:?Set INTERNAL_JRE_IMAGE to the approved pinned JRE image}
+        ARTIFACTORY_GRADLE_PLUGIN_URL: ${ARTIFACTORY_GRADLE_PLUGIN_URL:?Set the approved Gradle plugin repository}
+        ARTIFACTORY_MAVEN_URL: ${ARTIFACTORY_MAVEN_URL:?Set the approved Maven repository}
+    depends_on:
+      legacy-ofbiz-db:
+        condition: service_healthy
+    environment:
+      OFBIZ_JDBC_URL: jdbc:postgresql://legacy-ofbiz-db:5432/ofbizmaindb
+      OFBIZ_DB_USER: ofbiz
+      OFBIZ_DB_PASSWORD: Ab6SqDD2YM2lmEsvao-
+
+  modern-gateway:
+    image: ${INTERNAL_NGINX_IMAGE:?Set INTERNAL_NGINX_IMAGE to the approved pinned Nginx image}
+    depends_on: [legacy-ofbiz-app, modern-accounting-invoice-service]
+    ports:
+      - "18080:443"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+
+volumes:
+  legacy-db:
+
+secrets:
+  npmrc:
+    file: ${NPM_CONFIG_USERCONFIG:-${HOME}/.npmrc}
+  corporate_ca:
+    file: ${CORPORATE_CA_FILE:-${HOME}/.certs/Sonar-CloudFlare-Inspection-Cert.pem}
+  gradle_init:
+    file: ${GRADLE_INIT_FILE:-../gradle/modern-artifactory.init.gradle}

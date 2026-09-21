@@ -1,0 +1,32 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.4.9'
+}
+
+group = 'org.apache.ofbiz.modern'
+version = '0.1.0'
+
+java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }
+
+repositories {
+    maven {
+        def repositoryUrl = System.getenv('ARTIFACTORY_MAVEN_URL')
+        if (!repositoryUrl) {
+            throw new GradleException('ARTIFACTORY_MAVEN_URL must identify the approved Maven repository')
+        }
+        url = uri(repositoryUrl)
+    }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter:3.4.9'
+    implementation 'org.springframework.boot:spring-boot-starter-jetty:3.4.9'
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc:3.4.9'
+    implementation 'org.springframework:spring-webmvc:6.2.19'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.21.6'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.21.6'
+    runtimeOnly 'org.postgresql:postgresql:42.7.13'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test:3.4.9'
+}
+
+tasks.named('test') { useJUnitPlatform() }

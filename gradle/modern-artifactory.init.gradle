@@ -1,0 +1,37 @@
+settingsEvaluated { settings ->
+    def pluginUrl = System.getenv('ARTIFACTORY_GRADLE_PLUGIN_URL')
+    if (!pluginUrl) {
+        throw new GradleException('ARTIFACTORY_GRADLE_PLUGIN_URL must identify the approved plugin repository')
+    }
+    settings.pluginManagement.repositories.clear()
+    settings.pluginManagement.repositories.maven {
+        url = uri(pluginUrl)
+        def repositoryUser = System.getenv('ARTIFACTORY_USER')
+        def repositoryToken = System.getenv('ARTIFACTORY_TOKEN')
+        if (repositoryUser && repositoryToken) {
+            credentials {
+                username = repositoryUser
+                password = repositoryToken
+            }
+        }
+    }
+}
+
+allprojects {
+    def mavenUrl = System.getenv('ARTIFACTORY_MAVEN_URL')
+    if (!mavenUrl) {
+        throw new GradleException('ARTIFACTORY_MAVEN_URL must identify the approved Maven repository')
+    }
+    repositories.clear()
+    repositories.maven {
+        url = uri(mavenUrl)
+        def repositoryUser = System.getenv('ARTIFACTORY_USER')
+        def repositoryToken = System.getenv('ARTIFACTORY_TOKEN')
+        if (repositoryUser && repositoryToken) {
+            credentials {
+                username = repositoryUser
+                password = repositoryToken
+            }
+        }
+    }
+}
