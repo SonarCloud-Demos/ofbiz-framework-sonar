@@ -24,7 +24,7 @@ Use the weighted evidence in a decision workshop; do not treat the total as an a
 | Candidate | Value | Learning | Data | Coupling | Irreversibility | Security | Rollback | UI | Operations | Readiness | Evidence link |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | Notifications | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | Phase 1 |
-| Read-only product/catalog journey | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | Phase 1 |
+| Read-only product/catalog journey | 3 | 5 | 2 | 2 | 1 | 2 | 1 | 2 | 2 | 3 | [Phase 1 evidence](../phase-1/product-catalog-pilot.md) |
 | Read-only invoice search/detail | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | TBD | Phase 1 |
 
 ## Mandatory pilot properties
@@ -39,3 +39,7 @@ The pilot must:
 - produce reusable learning without becoming a throwaway technology demonstration.
 
 Do not choose ledger posting, payment capture, period close, or another high-impact irreversible operation as the first slice.
+
+## Decision
+
+The read-only product/catalog journey was approved on 2026-09-23. Its high learning value exercises identity, routing, projection data, UI markers, reconciliation, and rollback without transferring write authority. The narrow six-field projection, read-only operation, and immediate gateway rollback account for the favorable complexity, irreversibility, and rollback scores. Team readiness remains conditional on the named operational assignments held in the governance register.

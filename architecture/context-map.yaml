@@ -1,0 +1,41 @@
+schemaVersion: 1
+status: discovery
+lastReviewed: 2026-09-22
+contexts:
+  - id: legacy-ofbiz
+    name: Legacy OFBiz
+    classification: existing-system
+    status: observed
+  - id: product-catalog
+    name: Product Catalog
+    classification: candidate-bounded-context
+    status: approved-pilot-boundary
+  - id: billing-payments
+    name: Billing and Payments
+    classification: candidate-bounded-context
+    status: hypothesis
+  - id: notifications
+    name: Notifications
+    classification: candidate-bounded-context
+    status: hypothesis
+  - id: party
+    name: Party
+    classification: candidate-bounded-context
+    status: hypothesis
+relationships:
+  - upstream: legacy-ofbiz
+    downstream: product-catalog
+    interaction: temporary-read-projection-source
+    status: hypothesis
+  - upstream: legacy-ofbiz
+    downstream: billing-payments
+    interaction: temporary-read-projection-source
+    status: hypothesis
+  - upstream: party
+    downstream: notifications
+    interaction: recipient-and-communication-facts
+    status: hypothesis
+  - upstream: product-catalog
+    downstream: billing-payments
+    interaction: product-reference-facts
+    status: hypothesis

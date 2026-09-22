@@ -1,0 +1,78 @@
+schemaVersion: 1
+status: discovery
+lastReviewed: 2026-09-22
+routes:
+  - id: modern-catalog-product-search
+    path: /modern/catalog/products
+    journey: Search the product catalog in the modern shell
+    currentOwner: product-catalog
+    proposedOwner: product-catalog
+    implementation: planned-disabled
+    marker: mixed
+    authentication: required
+    allowedCallers:
+      - catalog-operator
+    rolloutCohort: none
+    retirementCondition: Product detail and every navigation target are modern or explicitly removed from the retained journey.
+    status: approved-pilot-route
+  - id: product-catalog-search-api
+    path: /api/catalog/v1/products
+    journey: Search the product catalog projection
+    currentOwner: product-catalog
+    proposedOwner: product-catalog
+    implementation: planned-disabled
+    marker: not-applicable
+    authentication: required
+    allowedCallers:
+      - modern-shell
+    rolloutCohort: none
+    retirementCondition: Permanent route; version retirement follows the approved API deprecation policy.
+    status: approved-pilot-route
+  - id: catalog-find-product
+    path: /catalog/control/FindProduct
+    journey: Find a product
+    currentOwner: legacy-ofbiz
+    proposedOwner: product-catalog
+    implementation: legacy
+    marker: legacy
+    authentication: required
+    allowedCallers: TBD
+    rolloutCohort: none
+    retirementCondition: Modern search and detail pass characterization, authorization, reconciliation, and rollback gates.
+    status: approved-pilot-route
+  - id: accounting-find-invoices
+    path: /accounting/control/findInvoices
+    journey: Find invoices from Accounting
+    currentOwner: legacy-ofbiz
+    proposedOwner: billing-payments
+    implementation: legacy
+    marker: legacy
+    authentication: required
+    allowedCallers: TBD
+    rolloutCohort: none
+    retirementCondition: Modern search and detail pass financial-data, authorization, reconciliation, audit, and rollback gates.
+    status: hypothesis
+  - id: accounts-receivable-find-invoices
+    path: /ar/control/findInvoices
+    journey: Find accounts-receivable invoices
+    currentOwner: legacy-ofbiz
+    proposedOwner: billing-payments
+    implementation: legacy
+    marker: legacy
+    authentication: required
+    allowedCallers: TBD
+    rolloutCohort: none
+    retirementCondition: Modern search and detail pass financial-data, authorization, reconciliation, audit, and rollback gates.
+    status: hypothesis
+  - id: accounts-payable-find-invoices
+    path: /ap/control/findInvoices
+    journey: Find accounts-payable invoices
+    currentOwner: legacy-ofbiz
+    proposedOwner: billing-payments
+    implementation: legacy
+    marker: legacy
+    authentication: required
+    allowedCallers: TBD
+    rolloutCohort: none
+    retirementCondition: Modern search and detail pass financial-data, authorization, reconciliation, audit, and rollback gates.
+    status: hypothesis

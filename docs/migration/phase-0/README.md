@@ -85,3 +85,5 @@ Phase 0 is complete only when all boxes are checked:
 2. Populate the machine-readable data-ownership and route-ownership catalogs.
 3. Score and select the pilot from measured Phase 1 evidence.
 4. Add repository references to approved operational dashboards and governance records where access policy permits.
+
+Phase 1 work is tracked in [the Phase 1 discovery record](../phase-1/README.md).
