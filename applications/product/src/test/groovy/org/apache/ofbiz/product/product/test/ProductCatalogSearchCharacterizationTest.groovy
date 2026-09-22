@@ -86,7 +86,7 @@ class ProductCatalogSearchCharacterizationTest implements JupiterTestHelper {
     }
 
     @Test
-    void unfilteredSearchHonorsLegacyPagination() {
+    void prefixFilteredSearchHonorsLegacyPagination() {
         Map result = dispatcher.runSync('performFindList', [
                 entityName: 'Product',
                 inputFields: [
@@ -108,13 +108,27 @@ class ProductCatalogSearchCharacterizationTest implements JupiterTestHelper {
     }
 
     @Test
+    void unfilteredSearchWithOptInReturnsAllProducts() {
+        Map result = dispatcher.runSync('performFindList', [
+                entityName: 'Product',
+                inputFields: [noConditionFind: NO_CONDITION_FIND],
+                orderBy: 'productId',
+                viewIndex: 0,
+                viewSize: 20,
+                userLogin: userLogin
+        ])
+        assert ServiceUtil.isSuccess(result)
+        assert result.listSize == from('Product').queryCount()
+    }
+
+    @Test
     void internalNameSearchIsCaseInsensitiveWhenRequested() {
         Map result = dispatcher.runSync('performFindList', [
                 entityName: 'Product',
                 inputFields: [
                         internalName: 'PHASE 1',
                         internalName_op: 'contains',
-                        internalName_ic: NO_CONDITION_FIND,
+                        internalName_ic: 'Y',
                         noConditionFind: NO_CONDITION_FIND
                 ],
                 orderBy: 'productId',
