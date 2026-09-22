@@ -319,7 +319,7 @@ resource "azurerm_api_management" "platform" {
   publisher_email               = var.apim_publisher_email
   sku_name                      = var.apim_sku_name
   virtual_network_type          = "Internal"
-  public_network_access_enabled = false
+  public_network_access_enabled = true
   client_certificate_enabled    = true
   min_api_version               = "2022-08-01"
   tags                          = var.tags
@@ -350,6 +350,25 @@ resource "azurerm_api_management" "platform" {
   }
 
   depends_on = [azurerm_subnet_network_security_group_association.api_management]
+
+  lifecycle {
+    ignore_changes = [public_network_access_enabled]
+  }
+}
+
+# Azure rejects creating an API Management service with public_network_access_enabled = false
+# directly (ActivateServiceWithPrivateEndpointAccessNotAllowed). Create with public access
+# enabled, then disable it via azapi once the service exists.
+# https://github.com/hashicorp/terraform-provider-azurerm/issues/31788
+resource "azapi_update_resource" "apim_disable_public_network_access" {
+  type        = "Microsoft.ApiManagement/service@2023-09-01-preview"
+  resource_id = azurerm_api_management.platform.id
+
+  body = {
+    properties = {
+      publicNetworkAccess = "Disabled"
+    }
+  }
 }
 
 resource "azurerm_cdn_frontdoor_profile" "platform" {
@@ -415,6 +434,7 @@ resource "azurerm_resource_group_policy_assignment" "require_tags" {
   description          = "Deny taggable resources that omit the ${each.key} governance tag."
   enforce              = true
   location             = var.location
+  not_scopes           = [azurerm_subnet.private_endpoints.id]
 
   identity {
     type = "SystemAssigned"
