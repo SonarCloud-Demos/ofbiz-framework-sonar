@@ -40,7 +40,14 @@ plugins {
     id "com.github.jakemarsden.git-hooks" version "latest.release"
     id "com.github.node-gradle.node" version "latest.release" apply false
     id "jacoco"
-    id "org.sonarqube" version "7.3.1.8318"
+    id "org.sonarqube" version "7.5.0.8588"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+    }
 }
 
 sonar {

@@ -32,6 +32,8 @@ class FileUtilTests {
         String zipName = 'README.md.zip'
         String fileName = 'README.md'
         File originalReadme = new File(fileName)
+        File temporaryDirectory = new File(zipFilePath)
+        assert temporaryDirectory.isDirectory() || temporaryDirectory.mkdirs()
 
         //validate zipStream from README.md is not null
         ByteArrayInputStream zipStream = FileUtil.zipFileStream(originalReadme.newInputStream(), fileName)
