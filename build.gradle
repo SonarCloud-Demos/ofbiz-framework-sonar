@@ -39,6 +39,7 @@ plugins {
     id "com.github.ManifestClasspath" version "latest.release"
     id "com.github.jakemarsden.git-hooks" version "latest.release"
     id "com.github.node-gradle.node" version "latest.release" apply false
+    id "jacoco"
     id "org.sonarqube" version "7.3.1.8318"
 }
 
