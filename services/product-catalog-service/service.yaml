@@ -7,7 +7,10 @@ ports:
   http: 8080
 dependencies:
   - catalog-postgres
+optionalMigrationDependencies:
+  - legacy-ofbiz-catalog-adapter
 slo:
   availability: 99.9
   searchLatencyP95Ms: 300
+  projectionMaximumAge: 5m
 runbook: docs/runbooks/product-catalog-service.md

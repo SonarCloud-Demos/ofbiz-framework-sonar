@@ -4,7 +4,7 @@
     {
       "path": "/modern/catalog/products",
       "owner": "product-catalog",
-      "marker": "modern",
+      "marker": "mixed",
       "apiImplementation": "modern",
       "authentication": "required"
     },
@@ -17,6 +17,13 @@
     },
     {
       "path": "/catalog/control/FindProduct",
+      "owner": "product-catalog",
+      "marker": "mixed",
+      "apiImplementation": "cohort-routed",
+      "authentication": "required"
+    },
+    {
+      "path": "/catalog/control/EditProduct",
       "owner": "legacy-ofbiz",
       "marker": "legacy",
       "apiImplementation": "legacy",

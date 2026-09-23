@@ -61,6 +61,8 @@ services:
         RUNTIME_IMAGE: ${NGINX_IMAGE:?Set NGINX_IMAGE to an approved internal, digest-pinned nginx image}
     ports:
       - "${MODERN_GATEWAY_PORT:-8081}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       product-catalog-service: { condition: service_healthy }
       modern-shell: { condition: service_healthy }

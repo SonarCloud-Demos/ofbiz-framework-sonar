@@ -1,3 +1,5 @@
 catalog:
+  pilot:
+    read-enabled: true
   security:
     mode: local

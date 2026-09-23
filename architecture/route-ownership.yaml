@@ -8,13 +8,13 @@ routes:
     currentOwner: product-catalog
     proposedOwner: product-catalog
     implementation: modern
-    marker: modern
+    marker: mixed
     authentication: required
     allowedCallers:
       - catalog-operator
     rolloutCohort: staff
     retirementCondition: Product detail and every navigation target are modern or explicitly removed from the retained journey.
-    status: phase-4-edge-enabled
+    status: phase-5-cohort-ready
   - id: product-catalog-search-api
     path: /api/catalog/v1/products
     journey: Search the product catalog projection
@@ -33,14 +33,27 @@ routes:
     journey: Find a product
     currentOwner: legacy-ofbiz
     proposedOwner: product-catalog
+    implementation: cohort-routed
+    marker: mixed
+    authentication: required
+    allowedCallers:
+      - catalog-operator
+    rolloutCohort: staff-modern-default-legacy
+    retirementCondition: Modern search and detail pass characterization, authorization, reconciliation, and rollback gates.
+    status: phase-5-cohort-ready
+  - id: catalog-edit-product
+    path: /catalog/control/EditProduct
+    journey: Edit a product in retained OFBiz
+    currentOwner: legacy-ofbiz
+    proposedOwner: product-catalog
     implementation: legacy
     marker: legacy
     authentication: required
     allowedCallers:
       - catalog-operator
     rolloutCohort: retained-legacy
-    retirementCondition: Modern search and detail pass characterization, authorization, reconciliation, and rollback gates.
-    status: phase-4-edge-enabled
+    retirementCondition: Product editing is migrated with authoritative writes, audit, reconciliation, and rollback evidence.
+    status: phase-5-retained-dependency
   - id: accounting-find-invoices
     path: /accounting/control/findInvoices
     journey: Find invoices from Accounting

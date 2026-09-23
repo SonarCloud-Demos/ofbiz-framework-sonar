@@ -48,6 +48,8 @@ run "secure_platform_defaults" {
     identity_origin_url                   = "https://identity.internal.example.invalid/auth"
     catalog_api_origin_url                = "https://catalog.internal.example.invalid/api/catalog"
     legacy_ofbiz_origin_url               = "https://ofbiz.internal.example.invalid/catalog"
+    catalog_pilot_enabled                 = true
+    catalog_pilot_subject_ids             = ["00000000-0000-0000-0000-000000000007"]
     tags = {
       application         = "ofbiz-modernization"
       environment         = "test"
@@ -69,6 +71,15 @@ run "secure_platform_defaults" {
       azapi_update_resource.apim_disable_public_network_access.body.properties.publicNetworkAccess == "Disabled"
     )
     error_message = "Platform origins and data services must not allow public network access."
+  }
+
+  assert {
+    condition = (
+      strcontains(azurerm_api_management_api_policy.legacy.xml_content, "X-Catalog-Pilot-Route") &&
+      strcontains(azurerm_api_management_api_policy.legacy.xml_content, "00000000-0000-0000-0000-000000000007") &&
+      strcontains(azurerm_api_management_api_policy.legacy.xml_content, "https://shell.internal.example.invalid/modern")
+    )
+    error_message = "The legacy API policy must route only the approved catalog pilot cohort to the modern shell."
   }
 
   assert {

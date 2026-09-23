@@ -2,6 +2,7 @@ package org.apache.ofbiz.modern.catalog.config;
 
 import org.apache.ofbiz.modern.catalog.adapter.in.CatalogController;
 import org.apache.ofbiz.modern.catalog.application.ProductCatalog;
+import org.apache.ofbiz.modern.catalog.application.CatalogShadowComparison;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
@@ -18,6 +19,9 @@ class EntraSecurityConfigurationTest {
 
     @MockitoBean
     private ProductCatalog productCatalog;
+
+    @MockitoBean
+    private CatalogShadowComparison shadowComparison;
 
     @MockitoBean
     private ReactiveJwtDecoder jwtDecoder;

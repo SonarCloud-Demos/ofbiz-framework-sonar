@@ -33,6 +33,14 @@ variable "edge_enabled" {
   type    = bool
   default = false
 }
+variable "catalog_pilot_enabled" {
+  type    = bool
+  default = false
+}
+variable "catalog_pilot_subject_ids" {
+  type    = set(string)
+  default = []
+}
 
 module "platform" {
   source = "../../modules/platform"
@@ -55,6 +63,8 @@ module "platform" {
   catalog_api_origin_url                = var.catalog_api_origin_url
   legacy_ofbiz_origin_url               = var.legacy_ofbiz_origin_url
   edge_enabled                          = var.edge_enabled
+  catalog_pilot_enabled                 = var.catalog_pilot_enabled
+  catalog_pilot_subject_ids             = var.catalog_pilot_subject_ids
   apim_sku_name                         = "Developer_1"
   postgres_sku_name                     = "B_Standard_B1ms"
   postgres_backup_retention_days        = 7

@@ -2,6 +2,7 @@
 set -eu
 
 compose_file="local-dev/docker-compose.yml"
+phase5_compose_file="local-dev/docker-compose.phase5.yml"
 
 require_artifactory() {
   : "${ARTIFACTORY_GRADLE_PLUGIN_URL:?Set the approved Gradle plugin repository URL}"
@@ -26,8 +27,15 @@ case "${1:-help}" in
   start)
     docker compose -f "${compose_file}" up -d --build --wait
     ;;
+  start-hybrid)
+    test -r "${CATALOG_LEGACY_TOKEN_FILE:?Set CATALOG_LEGACY_TOKEN_FILE to the OFBiz REST token file}"
+    docker compose -f "${compose_file}" -f "${phase5_compose_file}" up -d --build --wait
+    ;;
   smoke)
     local-dev/smoke-test.sh
+    ;;
+  smoke-hybrid)
+    PHASE5_EXPECT_LEGACY=true local-dev/smoke-test.sh
     ;;
   stop)
     docker compose -f "${compose_file}" down
@@ -36,6 +44,6 @@ case "${1:-help}" in
     printf '%s\n' 'Refusing to delete local database data implicitly. Use docker compose down --volumes explicitly.'
     ;;
   *)
-    printf '%s\n' 'Usage: ./modern {build|test|start|smoke|stop|clean}'
+    printf '%s\n' 'Usage: ./modern {build|test|start|start-hybrid|smoke|smoke-hybrid|stop|clean}'
     ;;
 esac

@@ -1,9 +1,8 @@
 package org.apache.ofbiz.modern.catalog.application;
 
-import java.util.List;
-
-import org.apache.ofbiz.modern.catalog.domain.ProductSummary;
+import org.apache.ofbiz.modern.catalog.domain.ProductPage;
+import org.apache.ofbiz.modern.catalog.domain.ProductSearch;
 
 public interface ProductCatalog {
-    List<ProductSummary> search(String query, int limit);
+    ProductPage search(ProductSearch search);
 }

@@ -10,7 +10,7 @@ require_text() {
   fi
 }
 
-for route in /modern/catalog/products /api/catalog/v1/products /catalog/control/FindProduct; do
+for route in /modern/catalog/products /api/catalog/v1/products /catalog/control/FindProduct /catalog/control/EditProduct; do
   require_text "${route}" architecture/route-ownership.yaml
   require_text "${route}" web/shell/route-manifest.json
 done

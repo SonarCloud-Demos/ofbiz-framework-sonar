@@ -16,3 +16,13 @@ alerts:
     condition: exceeds 5 minutes
     severity: ticket
     runbook: docs/runbooks/product-catalog-service.md
+  - id: catalog-shadow-mismatch
+    signal: catalog.shadow.comparisons{result="mismatch"}
+    condition: any mismatch during pilot observation
+    severity: page
+    runbook: docs/runbooks/product-catalog-service.md
+  - id: catalog-projection-sync-failed
+    signal: catalog.projection.sync{result="failure"}
+    condition: any failure or no successful synchronization within 5 minutes
+    severity: page
+    runbook: docs/runbooks/product-catalog-service.md

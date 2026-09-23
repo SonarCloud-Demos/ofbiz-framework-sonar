@@ -119,6 +119,25 @@ variable "edge_enabled" {
   default     = false
 }
 
+variable "catalog_pilot_enabled" {
+  description = "Whether approved catalog pilot subjects may use the modern FindProduct route."
+  type        = bool
+  default     = false
+}
+
+variable "catalog_pilot_subject_ids" {
+  description = "Validated Entra object IDs approved for the catalog pilot cohort."
+  type        = set(string)
+  default     = []
+  validation {
+    condition = alltrue([
+      for subject_id in var.catalog_pilot_subject_ids :
+      can(regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$", subject_id))
+    ])
+    error_message = "Every catalog pilot subject ID must be a UUID."
+  }
+}
+
 variable "entra_tenant_id" {
   description = "Microsoft Entra tenant that issues workforce access tokens."
   type        = string

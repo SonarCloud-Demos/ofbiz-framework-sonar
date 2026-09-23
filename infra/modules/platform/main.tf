@@ -635,8 +635,11 @@ resource "azurerm_api_management_api_policy" "legacy" {
   api_management_name = azurerm_api_management.platform.name
   resource_group_name = azurerm_resource_group.platform.name
   xml_content = templatefile("${path.module}/policies/legacy-api.xml", {
-    api_audience = var.entra_api_audience
-    tenant_id    = var.entra_tenant_id
+    api_audience            = var.entra_api_audience
+    catalog_pilot_enabled   = tostring(var.catalog_pilot_enabled)
+    catalog_pilot_subjects  = join(",", sort(tolist(var.catalog_pilot_subject_ids)))
+    modern_shell_origin_url = var.modern_shell_origin_url
+    tenant_id               = var.entra_tenant_id
   })
 }
 

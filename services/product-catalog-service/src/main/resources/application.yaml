@@ -26,5 +26,17 @@ management:
         enabled: ${OTEL_EXPORTER_OTLP_ENABLED:false}
         url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
 catalog:
+  projection:
+    maximum-age: ${CATALOG_PROJECTION_MAXIMUM_AGE:PT0S}
+  pilot:
+    read-enabled: ${CATALOG_PILOT_READ_ENABLED:false}
+  legacy:
+    enabled: ${CATALOG_LEGACY_ADAPTER_ENABLED:false}
+    base-url: ${CATALOG_LEGACY_BASE_URL:https://legacy.invalid/rest/product-catalog-migration}
+    token-file: ${CATALOG_LEGACY_TOKEN_FILE:/run/secrets/catalog_legacy_token}
+    timeout: ${CATALOG_LEGACY_TIMEOUT:PT5S}
+    shadow-enabled: ${CATALOG_SHADOW_ENABLED:false}
+    sync-enabled: ${CATALOG_SYNC_ENABLED:false}
+    sync-interval: ${CATALOG_SYNC_INTERVAL:PT1M}
   security:
     mode: ${CATALOG_SECURITY_MODE}

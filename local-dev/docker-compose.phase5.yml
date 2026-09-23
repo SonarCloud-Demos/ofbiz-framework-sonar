@@ -1,0 +1,16 @@
+services:
+  product-catalog-service:
+    environment:
+      CATALOG_LEGACY_ADAPTER_ENABLED: "true"
+      CATALOG_LEGACY_BASE_URL: http://host.docker.internal:8080/rest/product-catalog-migration
+      CATALOG_LEGACY_TOKEN_FILE: /run/secrets/catalog_legacy_token
+      CATALOG_SHADOW_ENABLED: "true"
+      CATALOG_SYNC_ENABLED: "true"
+      CATALOG_SYNC_INTERVAL: PT1M
+      CATALOG_PROJECTION_MAXIMUM_AGE: PT5M
+    secrets:
+      - catalog_legacy_token
+
+secrets:
+  catalog_legacy_token:
+    file: ${CATALOG_LEGACY_TOKEN_FILE:?Set CATALOG_LEGACY_TOKEN_FILE to a mode-restricted file containing an OFBiz REST token}

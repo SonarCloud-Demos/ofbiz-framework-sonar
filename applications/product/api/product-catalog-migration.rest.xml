@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0.
+-->
+<api name="Product Catalog Migration API"
+        path="product-catalog-migration"
+        displayName="Product Catalog Migration"
+        description="Temporary read-only adapter for the catalog migration"
+        publish="true">
+    <resource name="CatalogMigration" path="" auth="true" publish="true">
+        <operation verb="get" path="/products" produces="application/json" auth="true"
+                description="Read the canonical product projection from OFBiz">
+            <service name="findProductsForCatalogMigration"/>
+        </operation>
+    </resource>
+</api>

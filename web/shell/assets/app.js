@@ -1,6 +1,8 @@
 const form = document.querySelector('#search-form');
-const queryInput = document.querySelector('#query');
+const productIdInput = document.querySelector('#product-id');
+const internalNameInput = document.querySelector('#internal-name');
 const results = document.querySelector('#results');
+const resultRows = document.querySelector('#result-rows');
 const searchStatus = document.querySelector('#search-status');
 const identityStatus = document.querySelector('#identity-status');
 const loginButton = document.querySelector('#login');
@@ -30,31 +32,57 @@ async function changeSession(path) {
   });
   if (!response.ok) throw new Error(`Session change failed with status ${response.status}`);
   renderIdentity(await response.json());
-  await search('');
+  await search();
 }
 
-function renderProducts(products) {
-  results.replaceChildren(...products.map((product) => {
-    const item = document.createElement('li');
-    const heading = document.createElement('strong');
-    const description = document.createElement('p');
-    heading.textContent = `${product.name} (${product.id})`;
-    description.textContent = product.description;
-    item.append(heading, description);
-    return item;
+function cell(value) {
+  const element = document.createElement('td');
+  element.textContent = value || '—';
+  return element;
+}
+
+function renderProducts(page) {
+  resultRows.replaceChildren(...page.items.map((product) => {
+    const row = document.createElement('tr');
+    const idCell = document.createElement('td');
+    const editLink = document.createElement('a');
+    editLink.href = `/catalog/control/EditProduct?productId=${encodeURIComponent(product.productId)}`;
+    editLink.textContent = product.productId;
+    editLink.setAttribute('aria-label', `Edit ${product.productId} in the legacy catalog`);
+    idCell.append(editLink);
+    row.append(
+      idCell,
+      cell(product.productTypeId),
+      cell(product.internalName),
+      cell(product.brandName),
+      cell(product.productName),
+      cell(product.description)
+    );
+    return row;
   }));
-  searchStatus.textContent = `${products.length} product${products.length === 1 ? '' : 's'} found.`;
+  results.hidden = page.items.length === 0;
+  searchStatus.textContent = `${page.total} product${page.total === 1 ? '' : 's'} found.`;
 }
 
-async function search(query) {
+async function search() {
   if (!authenticated) {
     searchStatus.textContent = 'Sign in to search the catalog.';
-    results.replaceChildren();
+    resultRows.replaceChildren();
+    results.hidden = true;
     return;
   }
   searchStatus.textContent = 'Searching…';
-  results.replaceChildren();
-  const response = await fetch(`/api/catalog/v1/products?query=${encodeURIComponent(query)}&limit=25`, {
+  resultRows.replaceChildren();
+  results.hidden = true;
+  const parameters = new URLSearchParams({
+    productId: productIdInput.value,
+    internalName: internalNameInput.value,
+    sort: 'productId',
+    direction: 'asc',
+    page: '0',
+    size: '20'
+  });
+  const response = await fetch(`/api/catalog/v1/products?${parameters}`, {
     headers: { Accept: 'application/json' },
     credentials: 'same-origin'
   });
@@ -62,12 +90,12 @@ async function search(query) {
     throw new Error(`Catalog request failed with status ${response.status}`);
   }
   const body = await response.json();
-  renderProducts(body.products);
+  renderProducts(body);
 }
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
-  search(queryInput.value).catch(() => {
+  search().catch(() => {
     searchStatus.textContent = 'The catalog is unavailable. Try again later.';
   });
 });
@@ -86,7 +114,7 @@ logoutButton.addEventListener('click', () => {
 
 try {
   await requestSession();
-  await search('');
+  await search();
 } catch {
   searchStatus.textContent = 'The catalog is unavailable. Try again later.';
 }
