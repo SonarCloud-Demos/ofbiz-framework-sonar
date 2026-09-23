@@ -12,11 +12,19 @@
   <header>
     <a class="brand" href="/modern/catalog/products">OFBiz</a>
     <span id="runtime-marker" class="marker" aria-label="Modern implementation">Modern</span>
-    <nav aria-label="Primary"><a aria-current="page" href="/modern/catalog/products">Catalog</a></nav>
+    <nav aria-label="Primary">
+      <a aria-current="page" href="/modern/catalog/products">Catalog</a>
+      <a href="/catalog/control/FindProduct">Legacy catalog</a>
+    </nav>
+    <div id="identity" class="identity">
+      <span id="identity-status">Checking sign-in…</span>
+      <button id="login" type="button" hidden>Sign in locally</button>
+      <button id="logout" type="button" hidden>Sign out</button>
+    </div>
   </header>
   <main id="main">
     <h1>Product catalog</h1>
-    <p>Search the modern read projection. Product detail remains outside this Phase 3 reference journey.</p>
+    <p>Search the modern read projection or move to the retained legacy catalog through the same trusted origin.</p>
     <form id="search-form" role="search">
       <label for="query">Product name or ID</label>
       <div class="search-row">

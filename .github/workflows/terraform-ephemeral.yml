@@ -32,9 +32,17 @@ jobs:
       TF_VAR_budget_amount: ${{ vars.AZURE_MONTHLY_BUDGET }}
       TF_VAR_budget_contact_emails: ${{ vars.AZURE_BUDGET_CONTACT_EMAILS_JSON }}
       TF_VAR_cost_center: ${{ vars.AZURE_COST_CENTER }}
+      TF_VAR_catalog_api_origin_url: ${{ vars.CATALOG_API_ORIGIN_URL }}
+      TF_VAR_edge_enabled: true
+      TF_VAR_entra_api_audience: ${{ vars.ENTRA_API_AUDIENCE }}
+      TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
+      TF_VAR_entra_tenant_id: ${{ vars.AZURE_TENANT_ID }}
+      TF_VAR_identity_origin_url: ${{ vars.IDENTITY_ORIGIN_URL }}
       TF_VAR_environment_name: eph-${{ github.run_id }}
       TF_VAR_expiry: ${{ inputs.expiry }}
       TF_VAR_location: ${{ vars.AZURE_LOCATION }}
+      TF_VAR_legacy_ofbiz_origin_url: ${{ vars.LEGACY_OFBIZ_ORIGIN_URL }}
+      TF_VAR_modern_shell_origin_url: ${{ vars.MODERN_SHELL_ORIGIN_URL }}
       TF_VAR_owner: ${{ vars.AZURE_PLATFORM_OWNER }}
       TF_VAR_postgres_administrator_login: ${{ vars.POSTGRES_ADMIN_GROUP_NAME }}
       TF_VAR_postgres_administrator_object_id: ${{ vars.POSTGRES_ADMIN_GROUP_OBJECT_ID }}

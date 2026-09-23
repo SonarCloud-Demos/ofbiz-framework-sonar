@@ -1,11 +1,26 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "routes": [
     {
       "path": "/modern/catalog/products",
       "owner": "product-catalog",
       "marker": "modern",
-      "apiImplementation": "modern"
+      "apiImplementation": "modern",
+      "authentication": "required"
+    },
+    {
+      "path": "/api/catalog/v1/products",
+      "owner": "product-catalog",
+      "marker": "not-applicable",
+      "apiImplementation": "modern",
+      "authentication": "required"
+    },
+    {
+      "path": "/catalog/control/FindProduct",
+      "owner": "legacy-ofbiz",
+      "marker": "legacy",
+      "apiImplementation": "legacy",
+      "authentication": "required"
     }
   ]
 }

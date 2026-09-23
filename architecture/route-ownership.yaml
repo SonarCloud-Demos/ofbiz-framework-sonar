@@ -1,33 +1,33 @@
 schemaVersion: 1
-status: discovery
-lastReviewed: 2026-09-22
+status: phase-4-controlled-routing
+lastReviewed: 2026-09-23
 routes:
   - id: modern-catalog-product-search
     path: /modern/catalog/products
     journey: Search the product catalog in the modern shell
     currentOwner: product-catalog
     proposedOwner: product-catalog
-    implementation: modern-local-only
+    implementation: modern
     marker: modern
     authentication: required
     allowedCallers:
       - catalog-operator
-    rolloutCohort: none
+    rolloutCohort: staff
     retirementCondition: Product detail and every navigation target are modern or explicitly removed from the retained journey.
-    status: phase-3-local-reference
+    status: phase-4-edge-enabled
   - id: product-catalog-search-api
     path: /api/catalog/v1/products
     journey: Search the product catalog projection
     currentOwner: product-catalog
     proposedOwner: product-catalog
-    implementation: modern-local-only
+    implementation: modern
     marker: not-applicable
     authentication: required
     allowedCallers:
       - modern-shell
-    rolloutCohort: none
+    rolloutCohort: staff
     retirementCondition: Permanent route; version retirement follows the approved API deprecation policy.
-    status: phase-3-local-reference
+    status: phase-4-edge-enabled
   - id: catalog-find-product
     path: /catalog/control/FindProduct
     journey: Find a product
@@ -36,10 +36,11 @@ routes:
     implementation: legacy
     marker: legacy
     authentication: required
-    allowedCallers: TBD
-    rolloutCohort: none
+    allowedCallers:
+      - catalog-operator
+    rolloutCohort: retained-legacy
     retirementCondition: Modern search and detail pass characterization, authorization, reconciliation, and rollback gates.
-    status: approved-pilot-route
+    status: phase-4-edge-enabled
   - id: accounting-find-invoices
     path: /accounting/control/findInvoices
     journey: Find invoices from Accounting

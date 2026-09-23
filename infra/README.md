@@ -1,6 +1,6 @@
 # Azure platform infrastructure
 
-This directory contains the Phase 2 Terraform foundation. It is intentionally split into a one-time state bootstrap, reusable modules, and isolated environment roots.
+This directory contains the Terraform platform foundation and Phase 4 strangler edge. It is intentionally split into a one-time state bootstrap, reusable modules, and isolated environment roots.
 
 ## Layout
 
@@ -28,3 +28,9 @@ terraform fmt -check -recursive infra
 ```
 
 Cloud plans require an approved subscription, tenant, remote-state coordinates, and OIDC identity. See [Phase 2 operations](../docs/migration/phase-2/operations.md) before applying.
+
+## Phase 4 edge
+
+The platform module creates a Front Door Premium endpoint, prevention-mode WAF, private-link APIM origin, APIM route definitions, and Entra validation policies. `edge_enabled` defaults to `false`; enable it only after private-link approval, origin health, identity mapping, session-transition tests, and the rollback rehearsal in the Phase 4 runbook pass.
+
+Long-lived and ephemeral environments require the public Entra client ID/API audience plus private HTTPS origin URLs. These are identifiers and coordinates, not credentials. The public PKCE client has no client secret. Front Door is the only public application endpoint; the APIM post-provision update disables its public network access.

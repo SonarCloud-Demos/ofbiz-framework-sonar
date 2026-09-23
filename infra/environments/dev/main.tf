@@ -8,6 +8,17 @@ variable "apim_publisher_name" { type = string }
 variable "apim_publisher_email" { type = string }
 variable "postgres_administrator_login" { type = string }
 variable "postgres_administrator_object_id" { type = string }
+variable "entra_tenant_id" { type = string }
+variable "entra_client_id" { type = string }
+variable "entra_api_audience" { type = string }
+variable "modern_shell_origin_url" { type = string }
+variable "identity_origin_url" { type = string }
+variable "catalog_api_origin_url" { type = string }
+variable "legacy_ofbiz_origin_url" { type = string }
+variable "edge_enabled" {
+  type    = bool
+  default = false
+}
 
 module "platform" {
   source = "../../modules/platform"
@@ -22,6 +33,14 @@ module "platform" {
   apim_publisher_email                  = var.apim_publisher_email
   postgres_administrator_login          = var.postgres_administrator_login
   postgres_administrator_object_id      = var.postgres_administrator_object_id
+  entra_tenant_id                       = var.entra_tenant_id
+  entra_client_id                       = var.entra_client_id
+  entra_api_audience                    = var.entra_api_audience
+  modern_shell_origin_url               = var.modern_shell_origin_url
+  identity_origin_url                   = var.identity_origin_url
+  catalog_api_origin_url                = var.catalog_api_origin_url
+  legacy_ofbiz_origin_url               = var.legacy_ofbiz_origin_url
+  edge_enabled                          = var.edge_enabled
   apim_sku_name                         = "Developer_1"
   postgres_sku_name                     = "B_Standard_B1ms"
   postgres_backup_retention_days        = 14

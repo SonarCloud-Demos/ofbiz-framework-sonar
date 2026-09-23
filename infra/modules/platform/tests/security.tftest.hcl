@@ -40,6 +40,14 @@ run "secure_platform_defaults" {
     postgres_backup_retention_days        = 14
     postgres_geo_redundant_backup_enabled = true
     postgres_high_availability_enabled    = true
+    edge_enabled                          = true
+    entra_tenant_id                       = "00000000-0000-0000-0000-000000000002"
+    entra_client_id                       = "00000000-0000-0000-0000-000000000005"
+    entra_api_audience                    = "api://00000000-0000-0000-0000-000000000006"
+    modern_shell_origin_url               = "https://shell.internal.example.invalid/modern"
+    identity_origin_url                   = "https://identity.internal.example.invalid/auth"
+    catalog_api_origin_url                = "https://catalog.internal.example.invalid/api/catalog"
+    legacy_ofbiz_origin_url               = "https://ofbiz.internal.example.invalid/catalog"
     tags = {
       application         = "ofbiz-modernization"
       environment         = "test"
@@ -58,7 +66,7 @@ run "secure_platform_defaults" {
       azurerm_key_vault.platform.public_network_access_enabled == false &&
       azurerm_servicebus_namespace.platform.public_network_access_enabled == false &&
       azurerm_postgresql_flexible_server.platform.public_network_access_enabled == false &&
-      azurerm_api_management.platform.public_network_access_enabled == false
+      azapi_update_resource.apim_disable_public_network_access.body.properties.publicNetworkAccess == "Disabled"
     )
     error_message = "Platform origins and data services must not allow public network access."
   }
@@ -90,7 +98,7 @@ run "secure_platform_defaults" {
   }
 
   assert {
-    condition     = length(azurerm_monitor_diagnostic_setting.platform) == 10
+    condition     = length(azurerm_monitor_diagnostic_setting.platform) == 11
     error_message = "Every supported platform resource must export diagnostics."
   }
 
@@ -100,5 +108,15 @@ run "secure_platform_defaults" {
       azurerm_resource_group_policy_assignment.allowed_locations.enforce
     )
     error_message = "Region and mandatory-tag policy assignments must remain enforced."
+  }
+
+  assert {
+    condition = (
+      azurerm_cdn_frontdoor_endpoint.platform.enabled &&
+      azurerm_cdn_frontdoor_route.platform.forwarding_protocol == "HttpsOnly" &&
+      azurerm_cdn_frontdoor_firewall_policy.platform.mode == "Prevention" &&
+      length(azurerm_cdn_frontdoor_firewall_policy.platform.managed_rule) == 2
+    )
+    error_message = "The Phase 4 edge must enforce HTTPS and WAF prevention before accepting traffic."
   }
 }

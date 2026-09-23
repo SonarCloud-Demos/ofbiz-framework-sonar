@@ -69,6 +69,8 @@ jobs:
             --username "${INTERNAL_REGISTRY_USER}" --password-stdin
       - name: Test reference service
         run: ./modern test
+      - name: Validate Phase 4 route and local-auth invariants
+        run: sh architecture/validate-phase4-routes.sh
       - name: Validate contracts with approved internal tooling
         env:
           CONTRACT_LINTER_IMAGE: ${{ vars.CONTRACT_LINTER_IMAGE }}

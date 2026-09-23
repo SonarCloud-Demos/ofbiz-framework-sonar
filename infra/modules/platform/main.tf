@@ -385,8 +385,259 @@ resource "azurerm_cdn_frontdoor_profile" "platform" {
 resource "azurerm_cdn_frontdoor_endpoint" "platform" {
   name                     = "fde-${var.name}"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.platform.id
-  enabled                  = false
+  enabled                  = var.edge_enabled
   tags                     = var.tags
+}
+
+resource "azurerm_cdn_frontdoor_firewall_policy" "platform" {
+  name                = "waf${local.compact_name}"
+  resource_group_name = azurerm_resource_group.platform.name
+  sku_name            = azurerm_cdn_frontdoor_profile.platform.sku_name
+  enabled             = true
+  mode                = "Prevention"
+  tags                = var.tags
+
+  managed_rule {
+    type    = "DefaultRuleSet"
+    version = "2.1"
+    action  = "Block"
+  }
+
+  managed_rule {
+    type    = "Microsoft_BotManagerRuleSet"
+    version = "1.1"
+    action  = "Block"
+  }
+}
+
+resource "azurerm_cdn_frontdoor_security_policy" "platform" {
+  name                     = "security-${var.name}"
+  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.platform.id
+
+  security_policies {
+    firewall {
+      cdn_frontdoor_firewall_policy_id = azurerm_cdn_frontdoor_firewall_policy.platform.id
+      association {
+        domain {
+          cdn_frontdoor_domain_id = azurerm_cdn_frontdoor_endpoint.platform.id
+        }
+        patterns_to_match = ["/*"]
+      }
+    }
+  }
+}
+
+resource "azurerm_cdn_frontdoor_origin_group" "apim" {
+  name                     = "apim-${var.name}"
+  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.platform.id
+  session_affinity_enabled = false
+
+  health_probe {
+    interval_in_seconds = 30
+    path                = "/status-0123456789abcdef"
+    protocol            = "Https"
+    request_type        = "HEAD"
+  }
+
+  load_balancing {
+    sample_size                        = 4
+    successful_samples_required        = 3
+    additional_latency_in_milliseconds = 50
+  }
+}
+
+resource "azurerm_cdn_frontdoor_origin" "apim" {
+  name                           = "apim-${var.name}"
+  cdn_frontdoor_origin_group_id  = azurerm_cdn_frontdoor_origin_group.apim.id
+  enabled                        = true
+  certificate_name_check_enabled = true
+  host_name                      = trimprefix(azurerm_api_management.platform.gateway_url, "https://")
+  origin_host_header             = trimprefix(azurerm_api_management.platform.gateway_url, "https://")
+  http_port                      = 80
+  https_port                     = 443
+  priority                       = 1
+  weight                         = 1000
+
+  private_link {
+    location               = var.location
+    private_link_target_id = azurerm_api_management.platform.id
+    request_message        = "Front Door private origin for ${var.name}"
+    target_type            = "managedApis"
+  }
+}
+
+# APIM requires the client_secret field even for a public PKCE client. Repeating the public
+# client ID satisfies the provider schema without creating or storing a confidential credential;
+# token validation is enforced by policy rather than this developer-portal metadata.
+resource "azurerm_api_management_openid_connect_provider" "entra" {
+  name                = "entra-workforce-oidc"
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "Microsoft Entra workforce OpenID Connect"
+  client_id           = var.entra_client_id
+  client_secret       = var.entra_client_id
+  metadata_endpoint   = "https://login.microsoftonline.com/${var.entra_tenant_id}/v2.0/.well-known/openid-configuration"
+}
+
+resource "azurerm_api_management_api" "shell" {
+  name                  = "modern-shell"
+  resource_group_name   = azurerm_resource_group.platform.name
+  api_management_name   = azurerm_api_management.platform.name
+  revision              = "1"
+  display_name          = "Modern web shell"
+  path                  = "modern"
+  protocols             = ["https"]
+  service_url           = var.modern_shell_origin_url
+  subscription_required = false
+
+  openid_authentication {
+    openid_provider_name         = azurerm_api_management_openid_connect_provider.entra.name
+    bearer_token_sending_methods = ["authorizationHeader"]
+  }
+}
+
+resource "azurerm_api_management_api_operation" "shell" {
+  operation_id        = "modern-shell"
+  api_name            = azurerm_api_management_api.shell.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "Modern shell routes"
+  method              = "GET"
+  url_template        = "/*"
+}
+
+resource "azurerm_api_management_api" "identity" {
+  name                  = "shell-identity"
+  resource_group_name   = azurerm_resource_group.platform.name
+  api_management_name   = azurerm_api_management.platform.name
+  revision              = "1"
+  display_name          = "Shell identity session"
+  path                  = "auth"
+  protocols             = ["https"]
+  service_url           = var.identity_origin_url
+  subscription_required = false
+
+  openid_authentication {
+    openid_provider_name         = azurerm_api_management_openid_connect_provider.entra.name
+    bearer_token_sending_methods = ["authorizationHeader"]
+  }
+}
+
+resource "azurerm_api_management_api_operation" "identity_session" {
+  operation_id        = "identity-session"
+  api_name            = azurerm_api_management_api.identity.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "Read browser session"
+  method              = "GET"
+  url_template        = "/session"
+}
+
+resource "azurerm_api_management_api_operation" "identity_login" {
+  operation_id        = "identity-login"
+  api_name            = azurerm_api_management_api.identity.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "Start browser login"
+  method              = "GET"
+  url_template        = "/login"
+}
+
+resource "azurerm_api_management_api_operation" "identity_logout" {
+  operation_id        = "identity-logout"
+  api_name            = azurerm_api_management_api.identity.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "End browser session"
+  method              = "POST"
+  url_template        = "/logout"
+}
+
+resource "azurerm_cdn_frontdoor_route" "platform" {
+  name                          = "strangler-${var.name}"
+  cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.platform.id
+  cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.apim.id
+  cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.apim.id]
+  enabled                       = var.edge_enabled
+  forwarding_protocol           = "HttpsOnly"
+  https_redirect_enabled        = true
+  patterns_to_match             = ["/*"]
+  supported_protocols           = ["Http", "Https"]
+  link_to_default_domain        = true
+}
+
+resource "azurerm_api_management_api" "catalog" {
+  name                  = "product-catalog-v1"
+  resource_group_name   = azurerm_resource_group.platform.name
+  api_management_name   = azurerm_api_management.platform.name
+  revision              = "1"
+  display_name          = "Product catalog"
+  path                  = "api/catalog"
+  protocols             = ["https"]
+  service_url           = var.catalog_api_origin_url
+  subscription_required = false
+
+  openid_authentication {
+    openid_provider_name         = azurerm_api_management_openid_connect_provider.entra.name
+    bearer_token_sending_methods = ["authorizationHeader"]
+  }
+}
+
+resource "azurerm_api_management_api_operation" "catalog_search" {
+  operation_id        = "search-products"
+  api_name            = azurerm_api_management_api.catalog.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "Search products"
+  method              = "GET"
+  url_template        = "/v1/products"
+}
+
+resource "azurerm_api_management_api_policy" "catalog" {
+  api_name            = azurerm_api_management_api.catalog.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  xml_content = templatefile("${path.module}/policies/catalog-api.xml", {
+    api_audience = var.entra_api_audience
+    tenant_id    = var.entra_tenant_id
+  })
+}
+
+resource "azurerm_api_management_api" "legacy" {
+  name                  = "legacy-ofbiz"
+  resource_group_name   = azurerm_resource_group.platform.name
+  api_management_name   = azurerm_api_management.platform.name
+  revision              = "1"
+  display_name          = "Retained OFBiz routes"
+  path                  = "catalog"
+  protocols             = ["https"]
+  service_url           = var.legacy_ofbiz_origin_url
+  subscription_required = false
+
+  openid_authentication {
+    openid_provider_name         = azurerm_api_management_openid_connect_provider.entra.name
+    bearer_token_sending_methods = ["authorizationHeader"]
+  }
+}
+
+resource "azurerm_api_management_api_operation" "legacy_catalog" {
+  operation_id        = "legacy-find-product"
+  api_name            = azurerm_api_management_api.legacy.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  display_name        = "Legacy product search"
+  method              = "GET"
+  url_template        = "/control/FindProduct"
+}
+
+resource "azurerm_api_management_api_policy" "legacy" {
+  api_name            = azurerm_api_management_api.legacy.name
+  api_management_name = azurerm_api_management.platform.name
+  resource_group_name = azurerm_resource_group.platform.name
+  xml_content = templatefile("${path.module}/policies/legacy-api.xml", {
+    api_audience = var.entra_api_audience
+    tenant_id    = var.entra_tenant_id
+  })
 }
 
 data "azurerm_policy_definition" "allowed_locations" {
@@ -470,6 +721,7 @@ locals {
     container_apps     = azurerm_container_app_environment.platform.id
     container_registry = azurerm_container_registry.platform.id
     frontdoor          = azurerm_cdn_frontdoor_profile.platform.id
+    frontdoor_waf      = azurerm_cdn_frontdoor_firewall_policy.platform.id
     key_vault          = azurerm_key_vault.platform.id
     network_security   = azurerm_network_security_group.api_management.id
     postgres           = azurerm_postgresql_flexible_server.platform.id

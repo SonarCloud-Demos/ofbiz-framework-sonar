@@ -112,3 +112,72 @@ variable "postgres_high_availability_enabled" {
   description = "Whether PostgreSQL uses zone-redundant high availability."
   type        = bool
 }
+
+variable "edge_enabled" {
+  description = "Whether the approved Phase 4 Front Door endpoint and routes accept traffic."
+  type        = bool
+  default     = false
+}
+
+variable "entra_tenant_id" {
+  description = "Microsoft Entra tenant that issues workforce access tokens."
+  type        = string
+  validation {
+    condition     = can(regex("^[0-9a-fA-F-]{36}$", var.entra_tenant_id))
+    error_message = "The Entra tenant ID must be a UUID."
+  }
+}
+
+variable "entra_api_audience" {
+  description = "Application ID URI expected in access-token audiences."
+  type        = string
+  validation {
+    condition     = startswith(var.entra_api_audience, "api://")
+    error_message = "The Entra API audience must be an api:// application ID URI."
+  }
+}
+
+variable "entra_client_id" {
+  description = "Public client identifier used by the modern browser application."
+  type        = string
+  validation {
+    condition     = can(regex("^[0-9a-fA-F-]{36}$", var.entra_client_id))
+    error_message = "The Entra client ID must be a UUID."
+  }
+}
+
+variable "modern_shell_origin_url" {
+  description = "Private HTTPS origin including the /modern base path for the identity-aware modern shell."
+  type        = string
+  validation {
+    condition     = startswith(var.modern_shell_origin_url, "https://")
+    error_message = "The modern shell origin must use HTTPS."
+  }
+}
+
+variable "identity_origin_url" {
+  description = "Private HTTPS origin including the /auth base path for the shell OIDC session handler."
+  type        = string
+  validation {
+    condition     = startswith(var.identity_origin_url, "https://")
+    error_message = "The identity origin must use HTTPS."
+  }
+}
+
+variable "catalog_api_origin_url" {
+  description = "Private HTTPS origin including the /api/catalog base path for the product catalog API."
+  type        = string
+  validation {
+    condition     = startswith(var.catalog_api_origin_url, "https://")
+    error_message = "The catalog API origin must use HTTPS."
+  }
+}
+
+variable "legacy_ofbiz_origin_url" {
+  description = "Private HTTPS origin including the /catalog base path for retained OFBiz routes."
+  type        = string
+  validation {
+    condition     = startswith(var.legacy_ofbiz_origin_url, "https://")
+    error_message = "The legacy OFBiz origin must use HTTPS."
+  }
+}

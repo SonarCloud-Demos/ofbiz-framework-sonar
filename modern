@@ -21,6 +21,7 @@ case "${1:-help}" in
     require_artifactory
     ./gradlew --init-script "${PWD}/gradle/modern-artifactory.init.gradle" -p services/product-catalog-service test
     sh -n local-dev/smoke-test.sh
+    sh architecture/validate-phase4-routes.sh
     ;;
   start)
     docker compose -f "${compose_file}" up -d --build --wait

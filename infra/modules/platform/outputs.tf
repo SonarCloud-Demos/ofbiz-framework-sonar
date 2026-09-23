@@ -25,7 +25,12 @@ output "api_management_id" {
 
 output "frontdoor_endpoint_id" {
   value       = azurerm_cdn_frontdoor_endpoint.platform.id
-  description = "Disabled Front Door endpoint awaiting an approved private APIM origin."
+  description = "Front Door endpoint used as the single public origin when Phase 4 routing is enabled."
+}
+
+output "frontdoor_endpoint_hostname" {
+  value       = azurerm_cdn_frontdoor_endpoint.platform.host_name
+  description = "Front Door hostname for smoke tests and DNS onboarding."
 }
 
 output "postgres_server_id" {
