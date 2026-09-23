@@ -27,4 +27,4 @@ management:
         url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
 catalog:
   security:
-    mode: ${CATALOG_SECURITY_MODE:local}
+    mode: ${CATALOG_SECURITY_MODE}

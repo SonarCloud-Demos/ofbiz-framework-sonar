@@ -17,11 +17,12 @@ public class JdbcProductCatalog implements ProductCatalog {
 
     @Override
     public List<ProductSummary> search(String query, int limit) {
-        String pattern = "%" + query.strip() + "%";
+        String escaped = query.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        String pattern = "%" + escaped + "%";
         return jdbcClient.sql("""
                 SELECT product_id, product_name, description
                 FROM catalog_product
-                WHERE product_name ILIKE :pattern OR product_id ILIKE :pattern
+                WHERE product_name ILIKE :pattern ESCAPE '\\' OR product_id ILIKE :pattern ESCAPE '\\'
                 ORDER BY product_name, product_id
                 LIMIT :limit
                 """)

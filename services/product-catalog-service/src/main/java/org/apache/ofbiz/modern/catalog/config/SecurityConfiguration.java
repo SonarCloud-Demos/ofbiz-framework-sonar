@@ -24,7 +24,7 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "catalog.security.mode", havingValue = "local", matchIfMissing = true)
+    @ConditionalOnProperty(name = "catalog.security.mode", havingValue = "local")
     SecurityWebFilterChain localSecurity(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
