@@ -11,7 +11,7 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 public class SecurityConfiguration {
     @Bean
-    @ConditionalOnProperty(name = "catalog.security.mode", havingValue = "entra")
+    @ConditionalOnProperty(name = "catalog.security.mode", havingValue = "entra", matchIfMissing = false)
     SecurityWebFilterChain entraSecurity(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
@@ -24,7 +24,7 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(name = "catalog.security.mode", havingValue = "local")
+    @ConditionalOnProperty(name = "catalog.security.mode", havingValue = "local", matchIfMissing = false)
     SecurityWebFilterChain localSecurity(ServerHttpSecurity http) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
