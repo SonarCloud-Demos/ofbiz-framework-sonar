@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.UnaryOperator;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -49,14 +50,42 @@ public final class EntraIdentityBridgeFilter implements Filter {
     private static final String MODULE = EntraIdentityBridgeFilter.class.getName();
     private static final String SUBJECT_HEADER = "X-Authenticated-Subject";
     private static final String TENANT_HEADER = "X-Authenticated-Tenant";
+    private static final String USER_LOGIN_ID = "userLoginId";
 
     private boolean enabled;
     private String expectedTenant;
     private Map<String, String> subjectMappings = Collections.emptyMap();
+    private final UnaryOperator<String> environment;
+    private final UserResolver userResolver;
+    private final LoginHandler loginHandler;
+
+    public EntraIdentityBridgeFilter() {
+        this(System::getenv, EntraIdentityBridgeFilter::resolveUserLogin, EntraIdentityBridgeFilter::login);
+    }
+
+    EntraIdentityBridgeFilter(UnaryOperator<String> environment) {
+        this(environment, EntraIdentityBridgeFilter::resolveUserLogin, EntraIdentityBridgeFilter::login);
+    }
+
+    EntraIdentityBridgeFilter(UnaryOperator<String> environment, UserResolver userResolver, LoginHandler loginHandler) {
+        this.environment = environment;
+        this.userResolver = userResolver;
+        this.loginHandler = loginHandler;
+    }
+
+    private static GenericValue resolveUserLogin(Delegator delegator, String userLoginId)
+            throws GenericEntityException {
+        return EntityQuery.use(delegator).from("UserLogin")
+                .where(USER_LOGIN_ID, userLoginId).cache(false).queryOne();
+    }
+
+    private static String login(HttpServletRequest request, HttpServletResponse response, GenericValue userLogin) {
+        return LoginWorker.doMainLogin(request, response, userLogin, null);
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        enabled = "entra".equals(System.getenv("OFBIZ_IDENTITY_BRIDGE_MODE"));
+        enabled = "entra".equals(environment.apply("OFBIZ_IDENTITY_BRIDGE_MODE"));
         if (!enabled) {
             return;
         }
@@ -80,7 +109,7 @@ public final class EntraIdentityBridgeFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String subject = httpRequest.getHeader(SUBJECT_HEADER);
         String tenant = httpRequest.getHeader(TENANT_HEADER);
-        String userLoginId = subjectMappings.get(subject);
+        String userLoginId = UtilValidate.isEmpty(subject) ? null : subjectMappings.get(subject);
         if (!expectedTenant.equals(tenant) || UtilValidate.isEmpty(userLoginId)) {
             deny(httpResponse);
             return;
@@ -99,31 +128,39 @@ public final class EntraIdentityBridgeFilter implements Filter {
         }
     }
 
-    private static void establishSession(HttpServletRequest request, HttpServletResponse response, String userLoginId)
+    private void establishSession(HttpServletRequest request, HttpServletResponse response, String userLoginId)
             throws GenericEntityException, IOException {
         HttpSession session = request.getSession();
         GenericValue currentUser = (GenericValue) session.getAttribute("userLogin");
-        if (currentUser != null && userLoginId.equals(currentUser.getString("userLoginId"))) {
+        if (currentUser != null && userLoginId.equals(currentUser.getString(USER_LOGIN_ID))) {
             return;
         }
         session.invalidate();
         session = request.getSession(true);
 
-        Delegator delegator = (Delegator) request.getAttribute("delegator");
-        GenericValue userLogin = EntityQuery.use(delegator).from("UserLogin")
-                .where("userLoginId", userLoginId).cache(false).queryOne();
+        GenericValue userLogin = userResolver.resolve((Delegator) request.getAttribute("delegator"), userLoginId);
         if (userLogin == null || "N".equals(userLogin.getString("enabled"))) {
             deny(response);
             return;
         }
 
-        String loginResult = LoginWorker.doMainLogin(request, response, userLogin, null);
+        String loginResult = loginHandler.login(request, response, userLogin);
         if ("error".equals(loginResult)) {
             deny(response);
             return;
         }
         session.setAttribute("entraSubject", request.getHeader(SUBJECT_HEADER));
         session.setAttribute("entraTenant", request.getHeader(TENANT_HEADER));
+    }
+
+    @FunctionalInterface
+    interface UserResolver {
+        GenericValue resolve(Delegator delegator, String userLoginId) throws GenericEntityException;
+    }
+
+    @FunctionalInterface
+    interface LoginHandler {
+        String login(HttpServletRequest request, HttpServletResponse response, GenericValue userLogin);
     }
 
     static Map<String, String> parseMappings(String rawMappings) throws ServletException {
@@ -137,8 +174,8 @@ public final class EntraIdentityBridgeFilter implements Filter {
         return Map.copyOf(mappings);
     }
 
-    private static String requireEnvironment(String name) throws ServletException {
-        String value = System.getenv(name);
+    private String requireEnvironment(String name) throws ServletException {
+        String value = environment.apply(name);
         if (UtilValidate.isEmpty(value)) {
             throw new ServletException(name + " is required when the Entra identity bridge is enabled");
         }
