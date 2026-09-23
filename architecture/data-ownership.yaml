@@ -1,0 +1,59 @@
+schemaVersion: 1
+status: discovery
+lastReviewed: 2026-09-22
+entities:
+  - name: Product
+    definition: applications/datamodel/entitydef/product-entitymodel.xml
+    currentAuthority: legacy-ofbiz
+    currentWriters:
+      - legacy-ofbiz
+    proposedOwner: product-catalog
+    migrationStrategy: read-projection-first
+    sensitivity: TBD
+    retention: TBD
+    volumeProfile: TBD
+    status: approved-pilot-projection
+  - name: Invoice
+    definition: applications/datamodel/entitydef/accounting-entitymodel.xml
+    currentAuthority: legacy-ofbiz
+    currentWriters:
+      - legacy-ofbiz
+    proposedOwner: billing-payments
+    migrationStrategy: read-projection-first
+    sensitivity: financial
+    retention: TBD
+    volumeProfile: TBD
+    status: hypothesis
+  - name: CommunicationEvent
+    definition: applications/datamodel/entitydef/party-entitymodel.xml
+    currentAuthority: legacy-ofbiz
+    currentWriters:
+      - legacy-ofbiz
+    proposedOwner: TBD
+    migrationStrategy: TBD
+    sensitivity: personal-data-likely
+    retention: TBD
+    volumeProfile: TBD
+    status: observed
+  - name: CommEventContentAssoc
+    definition: applications/datamodel/entitydef/party-entitymodel.xml
+    currentAuthority: legacy-ofbiz
+    currentWriters:
+      - legacy-ofbiz
+    proposedOwner: TBD
+    migrationStrategy: TBD
+    sensitivity: personal-data-likely
+    retention: TBD
+    volumeProfile: TBD
+    status: observed
+  - name: ContactListCommStatus
+    definition: applications/datamodel/entitydef/marketing-entitymodel.xml
+    currentAuthority: legacy-ofbiz
+    currentWriters:
+      - legacy-ofbiz
+    proposedOwner: TBD
+    migrationStrategy: TBD
+    sensitivity: personal-data-likely
+    retention: TBD
+    volumeProfile: TBD
+    status: observed

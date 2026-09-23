@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-runtime="mixed">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OFBiz Modern Catalog</title>
+  <link rel="stylesheet" href="/modern/assets/styles.css">
+  <script type="module" src="/modern/assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <a class="brand" href="/modern/catalog/products">OFBiz</a>
+    <span id="runtime-marker" class="marker mixed" aria-label="Mixed implementation">Mixed</span>
+    <nav aria-label="Primary">
+      <a aria-current="page" href="/modern/catalog/products">Catalog</a>
+      <a href="/catalog/control/FindProduct?forceLegacy=true">Legacy catalog</a>
+    </nav>
+    <div id="identity" class="identity">
+      <span id="identity-status">Checking sign-in…</span>
+      <button id="login" type="button" hidden>Sign in locally</button>
+      <button id="logout" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+  <main id="main">
+    <h1>Product catalog</h1>
+    <p>Search the modern read projection. Product editing remains in the retained legacy catalog.</p>
+    <form id="search-form" role="search">
+      <label for="product-id">Product ID</label>
+      <div class="search-row">
+        <input id="product-id" name="productId" maxlength="20" autocomplete="off">
+      </div>
+      <label for="internal-name">Internal name contains</label>
+      <div class="search-row">
+        <input id="internal-name" name="internalName" maxlength="255" autocomplete="off">
+        <button type="submit">Search</button>
+      </div>
+    </form>
+    <output id="search-status" aria-live="polite"></output>
+    <div class="table-scroll" aria-label="Product search results">
+      <table id="results" hidden>
+        <thead><tr><th>Product ID</th><th>Type</th><th>Internal name</th><th>Brand</th><th>Product name</th><th>Description</th></tr></thead>
+        <tbody id="result-rows"></tbody>
+      </table>
+    </div>
+  </main>
+  <footer>Reference golden path · <span id="build-version">local</span></footer>
+</body>
+</html>

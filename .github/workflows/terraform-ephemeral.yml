@@ -1,0 +1,87 @@
+name: Terraform ephemeral environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      expiry:
+        description: ISO expiry date for the disposable environment (YYYY-MM-DD)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle:
+    name: Create, verify, and destroy
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    environment: ephemeral
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_USE_AZUREAD: true
+      ARM_USE_OIDC: true
+      TF_IN_AUTOMATION: true
+      TF_VAR_apim_publisher_email: ${{ vars.APIM_PUBLISHER_EMAIL }}
+      TF_VAR_apim_publisher_name: ${{ vars.APIM_PUBLISHER_NAME }}
+      TF_VAR_budget_amount: ${{ vars.AZURE_MONTHLY_BUDGET }}
+      TF_VAR_budget_contact_emails: ${{ vars.AZURE_BUDGET_CONTACT_EMAILS_JSON }}
+      TF_VAR_cost_center: ${{ vars.AZURE_COST_CENTER }}
+      TF_VAR_catalog_api_origin_url: ${{ vars.CATALOG_API_ORIGIN_URL }}
+      TF_VAR_edge_enabled: true
+      TF_VAR_entra_api_audience: ${{ vars.ENTRA_API_AUDIENCE }}
+      TF_VAR_entra_client_id: ${{ vars.ENTRA_CLIENT_ID }}
+      TF_VAR_entra_tenant_id: ${{ vars.AZURE_TENANT_ID }}
+      TF_VAR_identity_origin_url: ${{ vars.IDENTITY_ORIGIN_URL }}
+      TF_VAR_environment_name: eph-${{ github.run_id }}
+      TF_VAR_expiry: ${{ inputs.expiry }}
+      TF_VAR_location: ${{ vars.AZURE_LOCATION }}
+      TF_VAR_legacy_ofbiz_origin_url: ${{ vars.LEGACY_OFBIZ_ORIGIN_URL }}
+      TF_VAR_modern_shell_origin_url: ${{ vars.MODERN_SHELL_ORIGIN_URL }}
+      TF_VAR_owner: ${{ vars.AZURE_PLATFORM_OWNER }}
+      TF_VAR_postgres_administrator_login: ${{ vars.POSTGRES_ADMIN_GROUP_NAME }}
+      TF_VAR_postgres_administrator_object_id: ${{ vars.POSTGRES_ADMIN_GROUP_OBJECT_ID }}
+      TF_VAR_subscription_id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+      TF_STATE_KEY: ephemeral/${{ github.run_id }}/platform.tfstate
+      TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
+      TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: 1.13.3
+      - name: Initialize isolated remote state
+        working-directory: infra/environments/ephemeral
+        run: >-
+          terraform init -input=false
+          -backend-config="resource_group_name=${TF_STATE_RESOURCE_GROUP}"
+          -backend-config="storage_account_name=${TF_STATE_STORAGE_ACCOUNT}"
+          -backend-config="container_name=${TF_STATE_CONTAINER}"
+          -backend-config="key=${TF_STATE_KEY}"
+          -backend-config="use_azuread_auth=true"
+          -backend-config="use_oidc=true"
+      - name: Create saved plan
+        working-directory: infra/environments/ephemeral
+        run: terraform plan -input=false -out=lifecycle.tfplan
+      - name: Apply saved plan
+        working-directory: infra/environments/ephemeral
+        run: terraform apply -input=false -auto-approve lifecycle.tfplan
+      - name: Verify outputs and configuration convergence
+        working-directory: infra/environments/ephemeral
+        run: |
+          terraform output -raw resource_group_id
+          terraform plan -input=false -lock=false -refresh-only -detailed-exitcode
+      - name: Destroy disposable environment
+        if: always()
+        working-directory: infra/environments/ephemeral
+        run: terraform destroy -input=false -auto-approve
+      - name: Verify destruction
+        if: always()
+        working-directory: infra/environments/ephemeral
+        run: terraform plan -input=false -lock=false -destroy -detailed-exitcode

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements. See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership. The ASF licenses this file
+to you under the Apache License, Version 2.0.
+-->
+<services xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/services.xsd">
+    <description>Temporary Product Catalog Migration Services</description>
+    <vendor>OFBiz</vendor>
+    <version>1.0</version>
+
+    <service name="findProductsForCatalogMigration" engine="groovy" auth="true"
+             location="component://product/src/main/groovy/org/apache/ofbiz/product/migrate/ProductCatalogMigrationServices.groovy"
+             invoke="findProductsForCatalogMigration">
+        <description>Read the bounded canonical product projection for migration synchronization and shadow comparison.</description>
+        <permission-service service-name="catalogPermissionCheck" main-action="VIEW"/>
+        <attribute name="productId" type="String" mode="IN" optional="true"/>
+        <attribute name="internalName" type="String" mode="IN" optional="true"/>
+        <attribute name="sort" type="String" mode="IN" optional="true"/>
+        <attribute name="direction" type="String" mode="IN" optional="true"/>
+        <attribute name="page" type="Integer" mode="INOUT" optional="true"/>
+        <attribute name="size" type="Integer" mode="INOUT" optional="true"/>
+        <attribute name="items" type="java.util.List" mode="OUT" optional="false"/>
+        <attribute name="total" type="Long" mode="OUT" optional="false"/>
+        <attribute name="projectionTimestamp" type="String" mode="OUT" optional="false"/>
+    </service>
+</services>

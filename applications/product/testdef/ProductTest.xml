@@ -26,6 +26,10 @@ under the License.
         <entity-xml action="load" entity-xml-url="component://product/testdef/data/ProductTestData.xml"/>
     </test-case>
 
+    <test-case case-name="productCatalogSearchCharacterization">
+        <jupiter-test-suite class-name="org.apache.ofbiz.product.product.test.ProductCatalogSearchCharacterizationTest"/>
+    </test-case>
+
     <test-case case-name="producttest">
         <jupiter-test-suite class-name="org.apache.ofbiz.product.product.test.ProductTest"/>
     </test-case>

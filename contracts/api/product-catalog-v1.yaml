@@ -1,0 +1,112 @@
+openapi: 3.0.3
+info:
+  title: Product Catalog Read API
+  version: 1.0.0-draft
+  description: Canonical Phase 1 contract for the approved read-only product search pilot.
+paths:
+  /api/catalog/v1/products:
+    get:
+      operationId: searchProducts
+      summary: Search the product catalog projection
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: query
+          schema:
+            type: string
+            maxLength: 20
+        - name: internalName
+          in: query
+          schema:
+            type: string
+            maxLength: 255
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [productId, productTypeId, internalName, brandName, productName, description]
+            default: productId
+        - name: direction
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: A bounded product page. Items is always an array.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductPage'
+        '400':
+          description: Invalid filter, sort, or page input.
+        '401':
+          description: Authentication required.
+        '403':
+          description: Caller lacks catalog.read.
+        '503':
+          description: Catalog projection unavailable or outside its freshness policy.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ProductSummary:
+      type: object
+      required: [productId, productTypeId]
+      properties:
+        productId:
+          type: string
+        productTypeId:
+          type: string
+        internalName:
+          type: string
+          nullable: true
+        brandName:
+          type: string
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+    ProductPage:
+      type: object
+      required: [items, page, size, total, projectionTimestamp]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+        page:
+          type: integer
+          minimum: 0
+        size:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+        projectionTimestamp:
+          type: string
+          format: date-time
+

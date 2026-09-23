@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 2,
+  "routes": [
+    {
+      "path": "/modern/catalog/products",
+      "owner": "product-catalog",
+      "marker": "mixed",
+      "apiImplementation": "modern",
+      "authentication": "required"
+    },
+    {
+      "path": "/api/catalog/v1/products",
+      "owner": "product-catalog",
+      "marker": "not-applicable",
+      "apiImplementation": "modern",
+      "authentication": "required"
+    },
+    {
+      "path": "/catalog/control/FindProduct",
+      "owner": "product-catalog",
+      "marker": "mixed",
+      "apiImplementation": "cohort-routed",
+      "authentication": "required"
+    },
+    {
+      "path": "/catalog/control/EditProduct",
+      "owner": "legacy-ofbiz",
+      "marker": "legacy",
+      "apiImplementation": "legacy",
+      "authentication": "required"
+    }
+  ]
+}

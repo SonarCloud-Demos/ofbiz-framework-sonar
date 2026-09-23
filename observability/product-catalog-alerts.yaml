@@ -1,0 +1,28 @@
+schemaVersion: 1
+owner: product-catalog
+alerts:
+  - id: catalog-high-error-rate
+    signal: http.server.requests
+    condition: 5xx ratio exceeds 2 percent for 10 minutes
+    severity: page
+    runbook: docs/runbooks/product-catalog-service.md
+  - id: catalog-readiness-failed
+    signal: health.readiness
+    condition: unavailable for 5 minutes
+    severity: page
+    runbook: docs/runbooks/product-catalog-service.md
+  - id: catalog-outbox-stalled
+    signal: catalog.outbox.oldest.age
+    condition: exceeds 5 minutes
+    severity: ticket
+    runbook: docs/runbooks/product-catalog-service.md
+  - id: catalog-shadow-mismatch
+    signal: catalog.shadow.comparisons{result="mismatch"}
+    condition: any mismatch during pilot observation
+    severity: page
+    runbook: docs/runbooks/product-catalog-service.md
+  - id: catalog-projection-sync-failed
+    signal: catalog.projection.sync{result="failure"}
+    condition: any failure or no successful synchronization within 5 minutes
+    severity: page
+    runbook: docs/runbooks/product-catalog-service.md

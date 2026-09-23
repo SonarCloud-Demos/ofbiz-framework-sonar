@@ -1,0 +1,51 @@
+pluginManagement {
+    def requiredEnvironment = { String name ->
+        String value = System.getenv(name)
+        if (value == null || value.isBlank()) {
+            throw new GradleException("Required environment variable ${name} is not set")
+        }
+        value
+    }
+    def readRequiredSecret = { String name ->
+        File secretFile = new File(requiredEnvironment(name))
+        if (!secretFile.isFile()) {
+            throw new GradleException("Secret file configured by ${name} is unavailable")
+        }
+        String value = secretFile.getText('UTF-8').trim()
+        if (value.isEmpty()) {
+            throw new GradleException("Secret file configured by ${name} is empty")
+        }
+        value
+    }
+
+    settings.ext.modernMavenRepository = requiredEnvironment('ARTIFACTORY_MAVEN_URL')
+    settings.ext.modernArtifactoryUsername = readRequiredSecret('ARTIFACTORY_USER_FILE')
+    settings.ext.modernArtifactoryToken = readRequiredSecret('ARTIFACTORY_TOKEN_FILE')
+
+    repositories {
+        maven {
+            name = 'approvedArtifactoryPluginRepository'
+            url = uri(requiredEnvironment('ARTIFACTORY_GRADLE_PLUGIN_URL'))
+            credentials {
+                username = settings.ext.modernArtifactoryUsername
+                password = settings.ext.modernArtifactoryToken
+            }
+        }
+    }
+}
+
+rootProject.name = 'product-catalog-service'
+
+dependencyResolutionManagement {
+    repositoriesMode = RepositoriesMode.FAIL_ON_PROJECT_REPOS
+    repositories {
+        maven {
+            name = 'approvedArtifactoryMavenRepository'
+            url = uri(settings.ext.modernMavenRepository)
+            credentials {
+                username = settings.ext.modernArtifactoryUsername
+                password = settings.ext.modernArtifactoryToken
+            }
+        }
+    }
+}

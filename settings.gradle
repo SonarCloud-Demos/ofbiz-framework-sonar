@@ -62,3 +62,7 @@ activeComponents().each { File component ->
         include subProject.replaceAll(fileSep, ':')
     
 }
+
+includeBuild('services/product-catalog-service') {
+    name = 'modern-product-catalog-service'
+}

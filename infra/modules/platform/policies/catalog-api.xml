@@ -1,0 +1,31 @@
+<policies>
+  <inbound>
+    <base />
+    <validate-jwt header-name="Authorization" failed-validation-httpcode="401" failed-validation-error-message="Authentication required" require-expiration-time="true" require-scheme="Bearer">
+      <openid-config url="https://login.microsoftonline.com/${tenant_id}/v2.0/.well-known/openid-configuration" />
+      <audiences>
+        <audience>${api_audience}</audience>
+      </audiences>
+      <required-claims>
+        <claim name="scp" match="any" separator=" ">
+          <value>catalog.read</value>
+        </claim>
+      </required-claims>
+    </validate-jwt>
+    <set-header name="X-Authenticated-Subject" exists-action="delete" />
+    <set-header name="X-Authenticated-Tenant" exists-action="delete" />
+    <set-header name="X-Correlation-ID" exists-action="override">
+      <value>@(context.RequestId.ToString())</value>
+    </set-header>
+    <rate-limit-by-key calls="120" renewal-period="60" counter-key="@(context.Principal?.Id ?? context.Request.IpAddress)" />
+  </inbound>
+  <backend><base /></backend>
+  <outbound>
+    <base />
+    <set-header name="X-Content-Type-Options" exists-action="override"><value>nosniff</value></set-header>
+  </outbound>
+  <on-error>
+    <set-header name="X-Correlation-ID" exists-action="override"><value>@(context.RequestId.ToString())</value></set-header>
+    <base />
+  </on-error>
+</policies>

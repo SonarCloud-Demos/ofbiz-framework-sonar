@@ -1,0 +1,46 @@
+def requiredEnvironment = { String name ->
+    String value = System.getenv(name)
+    if (value == null || value.isBlank()) {
+        throw new GradleException("Required environment variable ${name} is not set")
+    }
+    value
+}
+
+def readRequiredSecret = { String name ->
+    File secretFile = new File(requiredEnvironment(name))
+    if (!secretFile.isFile()) {
+        throw new GradleException("Secret file configured by ${name} is unavailable")
+    }
+    String value = secretFile.getText('UTF-8').trim()
+    if (value.isEmpty()) {
+        throw new GradleException("Secret file configured by ${name} is empty")
+    }
+    value
+}
+
+beforeSettings { settings ->
+    String pluginRepository = requiredEnvironment('ARTIFACTORY_GRADLE_PLUGIN_URL')
+    String mavenRepository = requiredEnvironment('ARTIFACTORY_MAVEN_URL')
+    String username = readRequiredSecret('ARTIFACTORY_USER_FILE')
+    String token = readRequiredSecret('ARTIFACTORY_TOKEN_FILE')
+
+    settings.pluginManagement.repositories.clear()
+    settings.pluginManagement.repositories.maven {
+        name = 'approvedArtifactoryPluginRepository'
+        url = settings.uri(pluginRepository)
+        credentials {
+            it.username = username
+            password = token
+        }
+    }
+
+    settings.dependencyResolutionManagement.repositories.clear()
+    settings.dependencyResolutionManagement.repositories.maven {
+        name = 'approvedArtifactoryMavenRepository'
+        url = settings.uri(mavenRepository)
+        credentials {
+            it.username = username
+            password = token
+        }
+    }
+}
