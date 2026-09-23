@@ -1,0 +1,30 @@
+server:
+  port: ${SERVER_PORT:8080}
+  shutdown: graceful
+spring:
+  application:
+    name: product-catalog-service
+  datasource:
+    url: ${CATALOG_DATABASE_URL:jdbc:postgresql://localhost:5433/catalog}
+    username: ${CATALOG_DATABASE_USER:catalog}
+    password: ${CATALOG_DATABASE_PASSWORD}
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+  otlp:
+    metrics:
+      export:
+        enabled: ${OTEL_EXPORTER_OTLP_ENABLED:false}
+        url: ${OTEL_EXPORTER_OTLP_METRICS_ENDPOINT:http://otel-collector:4318/v1/metrics}
+catalog:
+  security:
+    mode: ${CATALOG_SECURITY_MODE:local}

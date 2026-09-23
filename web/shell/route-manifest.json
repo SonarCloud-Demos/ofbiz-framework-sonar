@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "routes": [
+    {
+      "path": "/modern/catalog/products",
+      "owner": "product-catalog",
+      "marker": "modern",
+      "apiImplementation": "modern"
+    }
+  ]
+}

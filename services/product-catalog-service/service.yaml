@@ -1,0 +1,13 @@
+schemaVersion: 1
+name: product-catalog-service
+owner: product-catalog
+runtime: java-21-spring-boot-4
+dataClassification: internal-product-data
+ports:
+  http: 8080
+dependencies:
+  - catalog-postgres
+slo:
+  availability: 99.9
+  searchLatencyP95Ms: 300
+runbook: docs/runbooks/product-catalog-service.md

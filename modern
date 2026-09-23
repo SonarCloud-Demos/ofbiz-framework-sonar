@@ -1,0 +1,40 @@
+#!/bin/sh
+set -eu
+
+compose_file="local-dev/docker-compose.yml"
+
+require_artifactory() {
+  : "${ARTIFACTORY_GRADLE_PLUGIN_URL:?Set the approved Gradle plugin repository URL}"
+  : "${ARTIFACTORY_MAVEN_URL:?Set the approved Maven repository URL}"
+  : "${ARTIFACTORY_USER_FILE:?Set ARTIFACTORY_USER_FILE to a local secret file}"
+  : "${ARTIFACTORY_TOKEN_FILE:?Set ARTIFACTORY_TOKEN_FILE to a local secret file}"
+  test -r "${ARTIFACTORY_USER_FILE}"
+  test -r "${ARTIFACTORY_TOKEN_FILE}"
+}
+
+case "${1:-help}" in
+  build)
+    require_artifactory
+    ./gradlew --init-script "${PWD}/gradle/modern-artifactory.init.gradle" -p services/product-catalog-service clean bootJar
+    ;;
+  test)
+    require_artifactory
+    ./gradlew --init-script "${PWD}/gradle/modern-artifactory.init.gradle" -p services/product-catalog-service test
+    sh -n local-dev/smoke-test.sh
+    ;;
+  start)
+    docker compose -f "${compose_file}" up -d --build --wait
+    ;;
+  smoke)
+    local-dev/smoke-test.sh
+    ;;
+  stop)
+    docker compose -f "${compose_file}" down
+    ;;
+  clean)
+    printf '%s\n' 'Refusing to delete local database data implicitly. Use docker compose down --volumes explicitly.'
+    ;;
+  *)
+    printf '%s\n' 'Usage: ./modern {build|test|start|smoke|stop|clean}'
+    ;;
+esac

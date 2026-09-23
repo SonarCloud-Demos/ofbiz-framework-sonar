@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-runtime="modern">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OFBiz Modern Catalog</title>
+  <link rel="stylesheet" href="/modern/assets/styles.css">
+  <script type="module" src="/modern/assets/app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header>
+    <a class="brand" href="/modern/catalog/products">OFBiz</a>
+    <span id="runtime-marker" class="marker" aria-label="Modern implementation">Modern</span>
+    <nav aria-label="Primary"><a aria-current="page" href="/modern/catalog/products">Catalog</a></nav>
+  </header>
+  <main id="main">
+    <h1>Product catalog</h1>
+    <p>Search the modern read projection. Product detail remains outside this Phase 3 reference journey.</p>
+    <form id="search-form" role="search">
+      <label for="query">Product name or ID</label>
+      <div class="search-row">
+        <input id="query" name="query" maxlength="255" autocomplete="off">
+        <button type="submit">Search</button>
+      </div>
+    </form>
+    <output id="search-status" aria-live="polite"></output>
+    <ul id="results" class="results"></ul>
+  </main>
+  <footer>Reference golden path · <span id="build-version">local</span></footer>
+</body>
+</html>

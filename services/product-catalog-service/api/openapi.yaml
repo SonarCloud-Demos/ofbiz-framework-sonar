@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Product Catalog API
+  version: 1.0.0
+paths:
+  /api/catalog/v1/products:
+    get:
+      operationId: searchProducts
+      security:
+        - entra: [catalog.read]
+      parameters:
+        - in: query
+          name: query
+          schema: { type: string, maxLength: 255 }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        '200':
+          description: Matching products
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '401': { description: Authentication required }
+        '403': { description: catalog.read scope required }
+components:
+  securitySchemes:
+    entra:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://login.microsoftonline.com/common/oauth2/v2.0/authorize
+          tokenUrl: https://login.microsoftonline.com/common/oauth2/v2.0/token
+          scopes:
+            catalog.read: Read the product catalog
+  schemas:
+    ProductSummary:
+      type: object
+      additionalProperties: false
+      required: [id, name, description]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+    SearchResponse:
+      type: object
+      additionalProperties: false
+      required: [products]
+      properties:
+        products:
+          type: array
+          items: { $ref: '#/components/schemas/ProductSummary' }

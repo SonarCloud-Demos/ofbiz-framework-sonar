@@ -152,6 +152,17 @@ Prefer secret files over environment variables when the build platform supports 
 
 Also remove or override `mavenCentral()` and `gradlePluginPortal()` so a missing artifact fails closed instead of falling back to a public registry.
 
+The Phase 3 reference service uses the credential-free `gradle/modern-artifactory.init.gradle` routing script. Set these values before invoking `./modern build` or `./modern test`:
+
+```sh
+export ARTIFACTORY_GRADLE_PLUGIN_URL='<approved-plugin-virtual-repository>'
+export ARTIFACTORY_MAVEN_URL='<approved-maven-virtual-repository>'
+export ARTIFACTORY_USER_FILE='<path-to-file-containing-username>'
+export ARTIFACTORY_TOKEN_FILE='<path-to-file-containing-token>'
+```
+
+The script clears every configured plugin and dependency repository and adds only the two approved Artifactory endpoints. It reads credentials from files, never directly from environment values, and fails before dependency resolution if any required input is absent. Do not add project-level repositories to the service build; `RepositoriesMode.FAIL_ON_PROJECT_REPOS` enforces that boundary.
+
 ## 6. Use the internal container registry
 
 Replace public base-image references such as:
@@ -179,6 +190,8 @@ Store registry credentials in the CI secret manager. A compliant CI job should:
 5. provide the approved Gradle init script and Artifactory credentials as secrets;
 6. build with public-network egress blocked;
 7. delete temporary credential files in an unconditional cleanup step.
+
+The modern golden-path workflow expects repository variables named `MODERN_BUILD_RUNNER`, `ARTIFACTORY_GRADLE_PLUGIN_URL`, `ARTIFACTORY_MAVEN_URL`, `INTERNAL_REGISTRY_HOST`, and the digest-pinned tool/image variables. `MODERN_BUILD_RUNNER` must select a pre-provisioned internal runner with Java 21, Docker BuildKit, access to approved internal endpoints, and network policy that blocks public registries. It expects secrets named `ARTIFACTORY_USER`, `ARTIFACTORY_TOKEN`, `CORPORATE_CA_PEM`, `INTERNAL_REGISTRY_USER`, and `INTERNAL_REGISTRY_TOKEN` in the protected `modern-build` environment. The workflow creates mode-restricted temporary files, passes them to BuildKit, and removes them in an `always()` cleanup step.
 
 Do not store an npm token in `SONAR_TOKEN`, reuse unrelated credentials, or write secret contents to `$GITHUB_OUTPUT` or build artifacts.
 

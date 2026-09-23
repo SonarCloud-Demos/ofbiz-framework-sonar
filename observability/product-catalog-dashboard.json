@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "title": "Product Catalog Service",
+  "owner": "product-catalog",
+  "panels": [
+    { "title": "Request rate", "metric": "http.server.requests", "aggregation": "rate" },
+    { "title": "Error rate", "metric": "http.server.requests", "filter": "status>=500", "aggregation": "rate" },
+    { "title": "P95 latency", "metric": "http.server.requests", "aggregation": "p95" },
+    { "title": "Database pool", "metric": "jdbc.connections.active", "aggregation": "max" },
+    { "title": "Unpublished outbox age", "metric": "catalog.outbox.oldest.age", "aggregation": "max" }
+  ]
+}

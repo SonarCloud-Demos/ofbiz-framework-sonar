@@ -7,27 +7,27 @@ routes:
     journey: Search the product catalog in the modern shell
     currentOwner: product-catalog
     proposedOwner: product-catalog
-    implementation: planned-disabled
-    marker: mixed
+    implementation: modern-local-only
+    marker: modern
     authentication: required
     allowedCallers:
       - catalog-operator
     rolloutCohort: none
     retirementCondition: Product detail and every navigation target are modern or explicitly removed from the retained journey.
-    status: approved-pilot-route
+    status: phase-3-local-reference
   - id: product-catalog-search-api
     path: /api/catalog/v1/products
     journey: Search the product catalog projection
     currentOwner: product-catalog
     proposedOwner: product-catalog
-    implementation: planned-disabled
+    implementation: modern-local-only
     marker: not-applicable
     authentication: required
     allowedCallers:
       - modern-shell
     rolloutCohort: none
     retirementCondition: Permanent route; version retirement follows the approved API deprecation policy.
-    status: approved-pilot-route
+    status: phase-3-local-reference
   - id: catalog-find-product
     path: /catalog/control/FindProduct
     journey: Find a product

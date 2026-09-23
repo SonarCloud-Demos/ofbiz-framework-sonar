@@ -1,0 +1,28 @@
+asyncapi: 3.0.0
+info:
+  title: Product Catalog events
+  version: 1.0.0
+channels:
+  productChanged:
+    address: product-catalog.product-changed.v1
+    messages:
+      productChanged:
+        $ref: '#/components/messages/ProductChanged'
+operations:
+  publishProductChanged:
+    action: send
+    channel: { $ref: '#/channels/productChanged' }
+components:
+  messages:
+    ProductChanged:
+      name: ProductChanged
+      contentType: application/json
+      payload:
+        type: object
+        additionalProperties: false
+        required: [eventId, occurredAt, productId, sourceVersion]
+        properties:
+          eventId: { type: string, format: uuid }
+          occurredAt: { type: string, format: date-time }
+          productId: { type: string }
+          sourceVersion: { type: integer, format: int64 }

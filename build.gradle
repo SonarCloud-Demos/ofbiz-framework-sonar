@@ -69,6 +69,15 @@ sonar {
                 'README.md',
                 '.asf.yaml',
         ].findAll { file(it).exists() }.join(',')
+        property "sonar.coverage.jacoco.xmlReportPaths", [
+                layout.buildDirectory.file('reports/jacoco/test/jacocoTestReport.xml').get().asFile,
+                file('services/product-catalog-service/build/reports/jacoco/test/jacocoTestReport.xml'),
+        ].join(',')
+        property "sonar.java.binaries", [
+                layout.buildDirectory.dir('classes/java/main').get().asFile,
+                layout.buildDirectory.dir('classes/groovy/main').get().asFile,
+                file('services/product-catalog-service/build/classes/java/main'),
+        ].join(',')
         property "sonar.exclusions", [
                 '**/build/**',
                 '**/.gradle/**',
@@ -91,6 +100,25 @@ sonar {
                 '**/*.woff2',
         ].join(',')
     }
+}
+
+def modernProductCatalog = gradle.includedBuild('modern-product-catalog-service')
+
+tasks.named('test') {
+    dependsOn modernProductCatalog.task(':test')
+    finalizedBy tasks.named('jacocoTestReport')
+}
+
+tasks.named('build') {
+    dependsOn modernProductCatalog.task(':build')
+}
+
+tasks.named('jacocoTestReport') {
+    dependsOn modernProductCatalog.task(':jacocoTestReport')
+}
+
+tasks.named('sonar') {
+    dependsOn tasks.named('jacocoTestReport')
 }
 
 /* OWASP plugin

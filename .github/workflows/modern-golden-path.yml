@@ -1,0 +1,148 @@
+name: Modern golden path
+
+on:
+  pull_request:
+    paths:
+      - 'services/**'
+      - 'web/**'
+      - 'local-dev/**'
+      - 'contracts/**'
+      - 'architecture/**'
+      - 'modern'
+      - '.github/workflows/modern-golden-path.yml'
+  push:
+    branches: [trunk]
+    paths:
+      - 'services/**'
+      - 'web/**'
+      - 'local-dev/**'
+      - 'contracts/**'
+      - 'architecture/**'
+      - 'modern'
+
+permissions:
+  contents: read
+
+jobs:
+  service-and-contracts:
+    runs-on: ${{ vars.MODERN_BUILD_RUNNER }}
+    environment: modern-build
+    env:
+      ARTIFACTORY_GRADLE_PLUGIN_URL: ${{ vars.ARTIFACTORY_GRADLE_PLUGIN_URL }}
+      ARTIFACTORY_MAVEN_URL: ${{ vars.ARTIFACTORY_MAVEN_URL }}
+      ARTIFACTORY_USER_FILE: ${{ runner.temp }}/modern-secrets/artifactory-user
+      ARTIFACTORY_TOKEN_FILE: ${{ runner.temp }}/modern-secrets/artifactory-token
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Verify pre-provisioned Java 21
+        run: java -XshowSettings:properties -version 2>&1 | grep -q 'java.specification.version = 21'
+      - name: Prepare ephemeral dependency credentials and trust
+        env:
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+          CORPORATE_CA_PEM: ${{ secrets.CORPORATE_CA_PEM }}
+        run: |
+          test -n "${ARTIFACTORY_GRADLE_PLUGIN_URL}${ARTIFACTORY_MAVEN_URL}"
+          test -n "${ARTIFACTORY_USER}${ARTIFACTORY_TOKEN}${CORPORATE_CA_PEM}"
+          install -m 700 -d "${RUNNER_TEMP}/modern-secrets"
+          umask 077
+          printf '%s' "${ARTIFACTORY_USER}" > "${ARTIFACTORY_USER_FILE}"
+          printf '%s' "${ARTIFACTORY_TOKEN}" > "${ARTIFACTORY_TOKEN_FILE}"
+          printf '%s' "${CORPORATE_CA_PEM}" > "${RUNNER_TEMP}/modern-secrets/corporate-ca.pem"
+          cp "${JAVA_HOME}/lib/security/cacerts" "${RUNNER_TEMP}/modern-secrets/modern-cacerts"
+          keytool -importcert -noprompt -storepass changeit -alias corporate-inspection \
+            -file "${RUNNER_TEMP}/modern-secrets/corporate-ca.pem" \
+            -keystore "${RUNNER_TEMP}/modern-secrets/modern-cacerts"
+          printf 'GRADLE_OPTS=-Djavax.net.ssl.trustStore=%s -Djavax.net.ssl.trustStorePassword=changeit\n' \
+            "${RUNNER_TEMP}/modern-secrets/modern-cacerts" >> "${GITHUB_ENV}"
+      - name: Authenticate to the internal container registry
+        env:
+          INTERNAL_REGISTRY_HOST: ${{ vars.INTERNAL_REGISTRY_HOST }}
+          INTERNAL_REGISTRY_USER: ${{ secrets.INTERNAL_REGISTRY_USER }}
+          INTERNAL_REGISTRY_TOKEN: ${{ secrets.INTERNAL_REGISTRY_TOKEN }}
+        run: |
+          test -n "${INTERNAL_REGISTRY_HOST}${INTERNAL_REGISTRY_USER}${INTERNAL_REGISTRY_TOKEN}"
+          printf '%s' "${INTERNAL_REGISTRY_TOKEN}" | docker login "${INTERNAL_REGISTRY_HOST}" \
+            --username "${INTERNAL_REGISTRY_USER}" --password-stdin
+      - name: Test reference service
+        run: ./modern test
+      - name: Validate contracts with approved internal tooling
+        env:
+          CONTRACT_LINTER_IMAGE: ${{ vars.CONTRACT_LINTER_IMAGE }}
+        run: |
+          test -n "${CONTRACT_LINTER_IMAGE}"
+          docker run --rm -v "$PWD:/workspace:ro" "${CONTRACT_LINTER_IMAGE}" lint \
+            /workspace/services/product-catalog-service/api/openapi.yaml \
+            /workspace/services/product-catalog-service/events/asyncapi.yaml
+      - name: Remove ephemeral credentials
+        if: always()
+        env:
+          INTERNAL_REGISTRY_HOST: ${{ vars.INTERNAL_REGISTRY_HOST }}
+        run: |
+          docker logout "${INTERNAL_REGISTRY_HOST}" || true
+          rm -rf "${RUNNER_TEMP}/modern-secrets"
+
+  supply-chain:
+    if: github.event_name == 'push'
+    runs-on: ${{ vars.MODERN_BUILD_RUNNER }}
+    environment: modern-build
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Prepare ephemeral build credentials
+        env:
+          ARTIFACTORY_USER: ${{ secrets.ARTIFACTORY_USER }}
+          ARTIFACTORY_TOKEN: ${{ secrets.ARTIFACTORY_TOKEN }}
+          CORPORATE_CA_PEM: ${{ secrets.CORPORATE_CA_PEM }}
+        run: |
+          test -n "${ARTIFACTORY_USER}${ARTIFACTORY_TOKEN}${CORPORATE_CA_PEM}"
+          install -m 700 -d "${RUNNER_TEMP}/modern-secrets"
+          umask 077
+          printf '%s' "${ARTIFACTORY_USER}" > "${RUNNER_TEMP}/modern-secrets/artifactory-user"
+          printf '%s' "${ARTIFACTORY_TOKEN}" > "${RUNNER_TEMP}/modern-secrets/artifactory-token"
+          printf '%s' "${CORPORATE_CA_PEM}" > "${RUNNER_TEMP}/modern-secrets/corporate-ca.pem"
+      - name: Authenticate to the internal container registry
+        env:
+          INTERNAL_REGISTRY_HOST: ${{ vars.INTERNAL_REGISTRY_HOST }}
+          INTERNAL_REGISTRY_USER: ${{ secrets.INTERNAL_REGISTRY_USER }}
+          INTERNAL_REGISTRY_TOKEN: ${{ secrets.INTERNAL_REGISTRY_TOKEN }}
+        run: |
+          test -n "${INTERNAL_REGISTRY_HOST}${INTERNAL_REGISTRY_USER}${INTERNAL_REGISTRY_TOKEN}"
+          printf '%s' "${INTERNAL_REGISTRY_TOKEN}" | docker login "${INTERNAL_REGISTRY_HOST}" \
+            --username "${INTERNAL_REGISTRY_USER}" --password-stdin
+      - name: Build, scan, produce SBOM and sign
+        env:
+          BUILD_IMAGE: ${{ vars.GRADLE_IMAGE }}
+          RUNTIME_IMAGE: ${{ vars.JAVA_RUNTIME_IMAGE }}
+          ARTIFACTORY_GRADLE_PLUGIN_URL: ${{ vars.ARTIFACTORY_GRADLE_PLUGIN_URL }}
+          ARTIFACTORY_MAVEN_URL: ${{ vars.ARTIFACTORY_MAVEN_URL }}
+          SBOM_TOOL_IMAGE: ${{ vars.SBOM_TOOL_IMAGE }}
+          SCANNER_IMAGE: ${{ vars.SCANNER_IMAGE }}
+          SIGNING_IMAGE: ${{ vars.SIGNING_IMAGE }}
+        run: |
+          test -n "${BUILD_IMAGE}${RUNTIME_IMAGE}${SBOM_TOOL_IMAGE}${SCANNER_IMAGE}${SIGNING_IMAGE}"
+          test -n "${ARTIFACTORY_GRADLE_PLUGIN_URL}${ARTIFACTORY_MAVEN_URL}"
+          docker build --build-arg BUILD_IMAGE="${BUILD_IMAGE}" --build-arg RUNTIME_IMAGE="${RUNTIME_IMAGE}" \
+            --build-arg ARTIFACTORY_GRADLE_PLUGIN_URL="${ARTIFACTORY_GRADLE_PLUGIN_URL}" \
+            --build-arg ARTIFACTORY_MAVEN_URL="${ARTIFACTORY_MAVEN_URL}" \
+            --secret id=gradle_init,src=gradle/modern-artifactory.init.gradle \
+            --secret id=artifactory_user,src="${RUNNER_TEMP}/modern-secrets/artifactory-user" \
+            --secret id=artifactory_token,src="${RUNNER_TEMP}/modern-secrets/artifactory-token" \
+            --secret id=corporate_ca,src="${RUNNER_TEMP}/modern-secrets/corporate-ca.pem" \
+            -f services/product-catalog-service/Dockerfile -t product-catalog-service:${GITHUB_SHA} .
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD:/workspace" "${SBOM_TOOL_IMAGE}" \
+            product-catalog-service:${GITHUB_SHA} --output cyclonedx-json=/workspace/catalog-sbom.json
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "${SCANNER_IMAGE}" \
+            image --exit-code 1 --severity HIGH,CRITICAL product-catalog-service:${GITHUB_SHA}
+          docker save product-catalog-service:${GITHUB_SHA} -o product-catalog-service.tar
+          docker run --rm -v "$PWD:/workspace" "${SIGNING_IMAGE}" \
+            sign-blob --yes --bundle /workspace/product-catalog-service.sigstore.json /workspace/product-catalog-service.tar
+      - name: Remove ephemeral credentials
+        if: always()
+        env:
+          INTERNAL_REGISTRY_HOST: ${{ vars.INTERNAL_REGISTRY_HOST }}
+        run: |
+          docker logout "${INTERNAL_REGISTRY_HOST}" || true
+          rm -rf "${RUNNER_TEMP}/modern-secrets"
