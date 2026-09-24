@@ -1,0 +1,34 @@
+{
+  "counts": {
+    "components": 33,
+    "webapps": 29,
+    "routes": 3255,
+    "services": 3517,
+    "entities": 1118,
+    "ecas": 356,
+    "scheduled-jobs": 22,
+    "integrations": 223
+  },
+  "context_record_counts": {
+    "accounting": 1550,
+    "api-edge": 13,
+    "content-media": 762,
+    "experience-platform": 69,
+    "identity-access": 18,
+    "inventory-facility": 148,
+    "legacy-platform": 870,
+    "manufacturing": 313,
+    "marketing-sales": 319,
+    "order-management": 1144,
+    "party-customer": 738,
+    "pricing-promotions": 88,
+    "product-catalog": 1522,
+    "shared-legacy-data": 1,
+    "shipping-fulfillment": 196,
+    "work-management": 383,
+    "workforce": 419
+  },
+  "parse_failures": [],
+  "ownership_status": "provisional-repository-inferred; stakeholder validation required",
+  "production_metrics_status": "not derivable from source; telemetry baseline required"
+}
