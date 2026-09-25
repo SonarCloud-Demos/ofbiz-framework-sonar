@@ -104,11 +104,25 @@ tasks.register('verifyModernArchitecture') {
     }
 }
 
+tasks.register('verifyTerraform') {
+    group = 'Verification'
+    description = 'Formats, validates, and tests all unapplied Phase 2 Terraform roots.'
+    inputs.files(fileTree('infra') {
+        include '**/*.tf', '**/*.tftest.hcl', '**/.terraform.lock.hcl', 'verify.sh'
+        exclude '**/.terraform/**'
+    })
+    doLast {
+        exec {
+            commandLine 'sh', 'infra/verify.sh'
+        }
+    }
+}
+
 tasks.named('build') {
     dependsOn modernProjectPaths.collect { "${it}:build" }
-    dependsOn 'verifyLockfiles', 'verifyModernArchitecture', 'verifyModernModuleRegistration'
+    dependsOn 'verifyLockfiles', 'verifyModernArchitecture', 'verifyModernModuleRegistration', 'verifyTerraform'
 }
 
 tasks.named('check') {
-    dependsOn 'verifyModernArchitecture', 'verifyModernModuleRegistration'
+    dependsOn 'verifyModernArchitecture', 'verifyModernModuleRegistration', 'verifyTerraform'
 }

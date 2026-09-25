@@ -23,6 +23,11 @@
   Verifies all GitHub Actions refs are on the ASF allowlist
   → Trigger: push / PR on `.github/` path
 
+- `phase2-infrastructure-apply.yml`
+  Documents the protected apply entry point; its only job is unconditionally disabled while the Phase 2 infrastructure waiver is active.
+
+Terraform formatting, validation, and mocked-provider tests run through the root Gradle `verifyTerraform` task. Existing root build workflows therefore validate infrastructure without Azure credentials.
+
 ### Workflow behavior
 
 - `push` → uses the workflow from the target branch  

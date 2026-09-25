@@ -383,6 +383,8 @@ Exit criteria:
 - Security tests validate private origins, identity, RBAC, secret access, WAF, audit logging, and restore procedures.
 - Platform SLOs, alerts, costs, and operational ownership are visible.
 
+Project-specific completion decision dated 2026-09-25: the repository implementation gate in `docs/architecture/phase-2-acceptance.md` is complete, completing Phase 2 under the approved unapplied-infrastructure waiver. Azure-accurate Terraform, policy controls, mocked-provider tests, environment compositions, and root-build validation are implemented. Provider-backed plans, deployment, destroy rehearsal, live security and identity tests, backup and restore, routing, observability, costs, capacity, and SLO evidence are deferred rather than passed. Every deferred item remains mandatory before the first Azure deployment or Phase 4 production rollout; this decision does not authorize cloud deployment or production traffic.
+
 ### Phase 3 — Edge strangler, identity bridge, and UI shell
 
 **Goal:** put legacy and modern traffic behind one controlled entry point without changing business ownership.

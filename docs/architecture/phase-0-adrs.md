@@ -8,6 +8,8 @@ These decisions are accepted for the platform foundation and first pilot. Each i
 
 **Rationale:** It provides revision traffic splitting, managed scaling, jobs, private environments, and lower platform overhead while retaining OCI portability.
 
+**Phase 2 confirmation (2026-09-25):** Azure Container Apps remains the exclusive Phase 2 compute target. AKS is outside Phase 2 and requires a later ADR backed by a measured workload requirement and an operational ownership model.
+
 ## ADR-002: Supported implementation stacks
 
 **Decision:** Use Java with a current supported LTS runtime and Spring Boot for the first domain service/BFF, and TypeScript with React for the shell/features. Gradle remains the root build authority and pins non-JVM tooling. A second backend stack requires an ADR and operations ownership.
@@ -15,6 +17,8 @@ These decisions are accepted for the platform foundation and first pilot. Each i
 **Rationale:** The repository and team-facing build are Java/Gradle-centric; one backend stack minimizes early operational variance. TypeScript is appropriate for the required modern UI.
 
 **Phase 1 implementation note (2026-09-25):** The reference service and BFF use the Java 17 JDK HTTP server temporarily. The proposed Spring Boot 3.5.12/Actuator/JDBC/Flyway/Micrometer graph failed dependency policy because it resolved prohibited-license components and high-severity vulnerable components. No exception was granted and the rejected dependencies were removed. Revisit this ADR, validate an acceptable locked graph, and record the decision before a business service adopts Spring Boot or selects a replacement stack.
+
+**Phase 2 confirmation (2026-09-25):** The dependency-light Java 17 reference runtime is the landing-zone workload. Spring Boot remains the preferred business-service candidate but is not approved until a current, locked dependency graph passes repository, license, vulnerability, Java, observability, migration, and coverage policy. No dependency-policy exception is assumed. If it fails, Quarkus and Micronaut are evaluated against the same criteria before Phase 4 implementation.
 
 ## ADR-003: Contract-first APIs and events
 
