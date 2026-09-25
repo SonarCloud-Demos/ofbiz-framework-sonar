@@ -27,10 +27,11 @@ public final class ExperienceBffMain {
         URI legacyUri = URI.create(environment("LEGACY_SERVICE_URL", "http://localhost:8080"));
         String username = environment("LOCAL_AUTH_USER", "modern-user");
         String password = requiredEnvironment("LOCAL_AUTH_PASSWORD");
+        boolean modernRoutesEnabled = Boolean.parseBoolean(environment("MODERN_ROUTES_ENABLED", "true"));
         ExperienceBffApplication application = new ExperienceBffApplication(referenceUri, legacyUri,
                 HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(2))
-                .build(), username, password);
+                .build(), username, password, modernRoutesEnabled);
         HttpServer server = createServer(application, port);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> server.stop(1)));
         server.start();

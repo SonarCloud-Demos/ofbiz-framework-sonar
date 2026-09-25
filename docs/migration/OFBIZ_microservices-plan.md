@@ -405,6 +405,8 @@ Exit criteria:
 - Modern pages always show the marker and legacy pages never show it.
 - Traffic can return to legacy without redeploying either application.
 
+Project-specific completion decision dated 2026-09-25: Phase 3 is implemented and validated at the repository and local-runtime boundary under an approved unapplied-infrastructure waiver. The shell/BFF route catalog defaults unknown traffic to legacy, the authenticated modern profile route and marker are server-controlled, the temporary legacy-session bridge has CSRF-protected revocation, and the modern route can fail back through configuration without rebuilding either application. Live Front Door/WAF/APIM routing, Entra federation, origin isolation, managed identity and RBAC behavior, production session bridging, cohort/canary traffic, and live telemetry remain deferred rather than passed. This decision does not authorize Azure deployment or production traffic, and all deferred Phase 2 and Phase 3 operational evidence remains mandatory before any production rollout.
+
 ### Phase 4 — First vertical slice: product catalog read path
 
 **Goal:** prove the complete strangler method on a useful, reversible, predominantly read-oriented capability.

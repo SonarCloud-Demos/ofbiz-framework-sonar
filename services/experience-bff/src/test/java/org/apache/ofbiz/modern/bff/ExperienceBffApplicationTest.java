@@ -15,6 +15,7 @@ import java.util.Base64;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExperienceBffApplicationTest {
@@ -116,6 +117,61 @@ class ExperienceBffApplicationTest {
     }
 
     @Test
+    void publishesFailClosedRouteManifestAndAuthenticatedProfile() throws Exception {
+        HttpResponse<String> manifest = get("/route-manifest.json", null);
+        HttpResponse<String> profile = get("/modern/profile", null);
+
+        assertEquals(200, manifest.statusCode());
+        assertTrue(manifest.body().contains("\"default\":\"legacy\""));
+        assertTrue(manifest.body().contains("\"path\":\"/modern/profile\",\"runtime\":\"modern\""));
+        assertEquals(200, profile.statusCode());
+        assertTrue(profile.body().contains("\"subject\":\"test-user\""));
+        assertFalse(profile.body().contains("test-password"));
+    }
+
+    @Test
+    void switchesModernProfileBackToLegacyWithoutRedeployment() throws Exception {
+        HttpServer failback = new ExperienceBffApplication(baseUri, baseUri, HttpClient.newHttpClient(),
+                "test-user", "test-password", false).createServer(0);
+        failback.start();
+        try {
+            URI failbackUri = URI.create("http://localhost:" + failback.getAddress().getPort());
+            HttpRequest request = HttpRequest.newBuilder(failbackUri.resolve("/modern/profile"))
+                    .header("Authorization", authorization())
+                    .GET()
+                    .build();
+            HttpResponse<String> response = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NEVER)
+                    .build()
+                    .send(request, HttpResponse.BodyHandlers.ofString());
+
+            assertEquals(307, response.statusCode());
+            assertEquals("/webtools/control/main", response.headers().firstValue("Location").orElseThrow());
+        } finally {
+            failback.stop(0);
+        }
+    }
+
+    @Test
+    void createsAndRevokesLegacySessionWithCsrfProtection() throws Exception {
+        HttpResponse<String> created = request("/legacy-session", "POST", null, null);
+        String cookie = created.headers().firstValue("Set-Cookie").orElseThrow().split(";", 2)[0];
+        String csrfToken = created.body().replaceFirst(".*\\\"csrfToken\\\":\\\"([^\\\"]+).*", "$1");
+
+        assertEquals(201, created.statusCode());
+        assertTrue(created.headers().firstValue("Set-Cookie").orElseThrow().contains("SameSite=Strict"));
+        assertEquals(403, request("/legacy-session", "DELETE", cookie, "wrong-token").statusCode());
+        assertEquals(204, request("/legacy-session", "DELETE", cookie, csrfToken).statusCode());
+        assertEquals(403, request("/legacy-session", "DELETE", cookie, csrfToken).statusCode());
+    }
+
+    @Test
+    void rejectsIdentityValuesThatCannotBeSafelySerialized() {
+        assertThrows(IllegalArgumentException.class, () -> new ExperienceBffApplication(
+                baseUri, baseUri, HttpClient.newHttpClient(), "unsafe\"identity", "test-password"));
+    }
+
+    @Test
     void rejectsUnauthenticatedRequests() throws Exception {
         HttpRequest request = HttpRequest.newBuilder(baseUri).GET().build();
         HttpResponse<String> response = HttpClient.newHttpClient()
@@ -131,6 +187,19 @@ class ExperienceBffApplicationTest {
         request.header("Authorization", authorization());
         if (correlationId != null) {
             request.header("X-Correlation-ID", correlationId);
+        }
+        return HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> request(String path, String method, String cookie, String csrfToken) throws Exception {
+        HttpRequest.Builder request = HttpRequest.newBuilder(baseUri.resolve(path))
+                .header("Authorization", authorization())
+                .method(method, HttpRequest.BodyPublishers.noBody());
+        if (cookie != null) {
+            request.header("Cookie", cookie);
+        }
+        if (csrfToken != null) {
+            request.header("X-CSRF-Token", csrfToken);
         }
         return HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.ofString());
     }

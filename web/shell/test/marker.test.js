@@ -26,4 +26,6 @@ test('the shell has the dependency-free accessibility baseline', async () => {
   assert.equal(shell.match(/<h1(?:\s|>)/g)?.length, 1);
   assert.match(shell, /aria-live="polite"/);
   assert.doesNotMatch(shell, /<img(?![^>]*\salt=)[^>]*>/);
+  assert.match(shell, /<nav aria-label="[^"]+">/);
+  assert.match(shell, /href="\/modern\/profile"/);
 });

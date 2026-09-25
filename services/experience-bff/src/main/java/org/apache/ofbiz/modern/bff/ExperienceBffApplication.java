@@ -18,12 +18,14 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public final class ExperienceBffApplication {
     static final String CORRELATION_HEADER = "X-Correlation-ID";
     static final String TRACE_PARENT_HEADER = "traceparent";
     private static final String JSON_CONTENT_TYPE = "application/json; charset=utf-8";
+    private static final String SESSION_COOKIE = "OFBIZ_MODERN_SESSION";
     private static final System.Logger LOGGER = System.getLogger(ExperienceBffApplication.class.getName());
     private static final Map<String, String> SHELL_RESOURCES = Map.of(
             "/", "shell/index.html",
@@ -38,11 +40,21 @@ public final class ExperienceBffApplication {
     private final URI legacyUri;
     private final HttpClient httpClient;
     private final byte[] expectedAuthorization;
+    private final String authenticatedUsername;
+    private final boolean modernRoutesEnabled;
+    private final Map<String, String> sessions = new ConcurrentHashMap<>();
 
     ExperienceBffApplication(URI referenceUri, URI legacyUri, HttpClient httpClient, String username, String password) {
+        this(referenceUri, legacyUri, httpClient, username, password, true);
+    }
+
+    ExperienceBffApplication(URI referenceUri, URI legacyUri, HttpClient httpClient, String username, String password,
+            boolean modernRoutesEnabled) {
         this.referenceUri = referenceUri;
         this.legacyUri = legacyUri;
         this.httpClient = httpClient;
+        this.authenticatedUsername = validatedUsername(username);
+        this.modernRoutesEnabled = modernRoutesEnabled;
         this.expectedAuthorization = ("Basic " + Base64.getEncoder().encodeToString(
                 (username + ':' + password).getBytes(StandardCharsets.UTF_8))).getBytes(StandardCharsets.US_ASCII);
     }
@@ -58,8 +70,102 @@ public final class ExperienceBffApplication {
                 "{\"status\":\"UP\"}"));
         server.createContext("/api/reference", this::reference);
         server.createContext("/api/legacy/health", this::legacyHealth);
+        server.createContext("/modern/profile", this::profile);
+        server.createContext("/route-manifest.json", this::routeManifest);
+        server.createContext("/legacy-session", this::legacySession);
         server.createContext("/", this::shell);
         server.setExecutor(Executors.newCachedThreadPool());
+    }
+
+    private void profile(HttpExchange exchange) throws IOException {
+        if (!authorize(exchange)) {
+            return;
+        }
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            methodNotAllowed(exchange, "GET");
+            return;
+        }
+        if (!modernRoutesEnabled) {
+            exchange.getResponseHeaders().set("Location", "/webtools/control/main");
+            send(exchange, 307, JSON_CONTENT_TYPE, "{\"route\":\"legacy\",\"reason\":\"failback\"}");
+            return;
+        }
+        send(exchange, 200, JSON_CONTENT_TYPE, "{\"route\":\"modern\",\"subject\":\""
+                + authenticatedUsername + "\",\"legacySession\":\"available\"}");
+    }
+
+    private void routeManifest(HttpExchange exchange) throws IOException {
+        if (!authorize(exchange)) {
+            return;
+        }
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            methodNotAllowed(exchange, "GET");
+            return;
+        }
+        String profileRuntime = modernRoutesEnabled ? "modern" : "legacy";
+        send(exchange, 200, JSON_CONTENT_TYPE, "{\"default\":\"legacy\",\"routes\":["
+                + "{\"path\":\"/modern/profile\",\"runtime\":\"" + profileRuntime + "\"},"
+                + "{\"path\":\"/webtools/*\",\"runtime\":\"legacy\"}]}");
+    }
+
+    private void legacySession(HttpExchange exchange) throws IOException {
+        if (!authorize(exchange)) {
+            return;
+        }
+        if ("POST".equals(exchange.getRequestMethod())) {
+            createLegacySession(exchange);
+        } else if ("DELETE".equals(exchange.getRequestMethod())) {
+            deleteLegacySession(exchange);
+        } else {
+            methodNotAllowed(exchange, "POST, DELETE");
+        }
+    }
+
+    private void createLegacySession(HttpExchange exchange) throws IOException {
+        String sessionId = UUID.randomUUID().toString();
+        String csrfToken = UUID.randomUUID().toString();
+        sessions.clear();
+        sessions.put(sessionId, csrfToken);
+        exchange.getResponseHeaders().set("Set-Cookie", SESSION_COOKIE + '=' + sessionId
+                + "; Path=/; Secure; HttpOnly; SameSite=Strict");
+        send(exchange, 201, JSON_CONTENT_TYPE, "{\"csrfToken\":\"" + csrfToken
+                + "\",\"identity\":\"" + authenticatedUsername + "\"}");
+    }
+
+    private void deleteLegacySession(HttpExchange exchange) throws IOException {
+        Optional<String> sessionId = sessionId(exchange);
+        String suppliedToken = exchange.getRequestHeaders().getFirst("X-CSRF-Token");
+        boolean accepted = sessionId.map(sessions::get)
+                .filter(expected -> suppliedToken != null && MessageDigest.isEqual(
+                        expected.getBytes(StandardCharsets.US_ASCII),
+                        suppliedToken.getBytes(StandardCharsets.US_ASCII)))
+                .isPresent();
+        if (!accepted) {
+            send(exchange, 403, JSON_CONTENT_TYPE, "{\"error\":\"csrf_validation_failed\"}");
+            return;
+        }
+        sessions.remove(sessionId.orElseThrow());
+        exchange.getResponseHeaders().set("Set-Cookie", SESSION_COOKIE
+                + "=; Path=/; Secure; HttpOnly; SameSite=Strict; Max-Age=0");
+        send(exchange, 204, JSON_CONTENT_TYPE, new byte[0]);
+    }
+
+    private static Optional<String> sessionId(HttpExchange exchange) {
+        return Optional.ofNullable(exchange.getRequestHeaders().getFirst("Cookie"))
+                .stream()
+                .flatMap(header -> java.util.Arrays.stream(header.split(";")))
+                .map(String::trim)
+                .filter(cookie -> cookie.startsWith(SESSION_COOKIE + '='))
+                .map(cookie -> cookie.substring(SESSION_COOKIE.length() + 1))
+                .filter(value -> value.matches("[0-9a-f-]{36}"))
+                .findFirst();
+    }
+
+    private static String validatedUsername(String username) {
+        if (!username.matches("[A-Za-z0-9._@-]{1,128}")) {
+            throw new IllegalArgumentException("The local authentication username contains unsupported characters");
+        }
+        return username;
     }
 
     private void reference(HttpExchange exchange) throws IOException {
@@ -67,8 +173,7 @@ public final class ExperienceBffApplication {
             return;
         }
         if (!"GET".equals(exchange.getRequestMethod())) {
-            exchange.getResponseHeaders().set("Allow", "GET");
-            send(exchange, 405, JSON_CONTENT_TYPE, "{\"error\":\"method_not_allowed\"}");
+            methodNotAllowed(exchange, "GET");
             return;
         }
         String correlationId = correlationId(exchange);
@@ -95,6 +200,11 @@ public final class ExperienceBffApplication {
         } catch (IOException unavailable) {
             sendUnavailable(exchange, correlationId);
         }
+    }
+
+    private static void methodNotAllowed(HttpExchange exchange, String allowed) throws IOException {
+        exchange.getResponseHeaders().set("Allow", allowed);
+        send(exchange, 405, JSON_CONTENT_TYPE, "{\"error\":\"method_not_allowed\"}");
     }
 
     private void shell(HttpExchange exchange) throws IOException {

@@ -91,7 +91,7 @@ resource "azurerm_cdn_frontdoor_route" "shell" {
   enabled                       = true
   forwarding_protocol           = "HttpsOnly"
   https_redirect_enabled        = true
-  patterns_to_match             = ["/modern/*", "/auth/*", "/bff/*", "/legacy-session", "/route-manifest.json", "/app.js", "/styles.css"]
+  patterns_to_match             = ["/", "/modern/*", "/api/reference", "/api/legacy/health", "/auth/*", "/legacy-session", "/route-manifest.json", "/app.js", "/app.css"]
   supported_protocols           = ["Http", "Https"]
   link_to_default_domain        = true
 }

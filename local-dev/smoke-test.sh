@@ -33,4 +33,14 @@ curl --fail --silent --show-error \
   --cacert "$certificate" \
   --user "$credentials" \
   "$modern_origin/api/legacy/health" | grep -q '"runtime":"legacy","reachable":true'
-printf '%s\n' 'Phase 1 modern shell/BFF/reference-service smoke test passed.'
+
+curl --fail --silent --show-error \
+  --cacert "$certificate" \
+  --user "$credentials" \
+  "$modern_origin/route-manifest.json" | grep -q '"default":"legacy"'
+
+curl --fail --silent --show-error \
+  --cacert "$certificate" \
+  --user "$credentials" \
+  "$modern_origin/modern/profile" | grep -q '"route":"modern"'
+printf '%s\n' 'Phase 3 local shell/BFF/identity-bridge smoke test passed.'
