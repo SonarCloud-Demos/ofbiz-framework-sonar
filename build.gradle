@@ -66,8 +66,8 @@ sonar {
                 'applications',
                 'framework',
                 'themes',
-                'services',
-                'web',
+                // Modern Gradle subprojects contribute their own source and test roots.
+                // Listing them here would make the aggregate scanner index files twice.
                 'contracts',
                 'platform',
                 'infra',
