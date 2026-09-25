@@ -61,6 +61,7 @@ sonar {
                 'build/reports/jacoco/test/jacocoTestReport.xml',
                 'services/reference-service/build/reports/jacoco/test/jacocoTestReport.xml',
                 'services/experience-bff/build/reports/jacoco/test/jacocoTestReport.xml',
+                'services/product-catalog-service/build/reports/jacoco/test/jacocoTestReport.xml',
         ].join(',')
         property "sonar.sources", [
                 'applications',

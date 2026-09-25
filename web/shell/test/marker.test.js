@@ -28,4 +28,14 @@ test('the shell has the dependency-free accessibility baseline', async () => {
   assert.doesNotMatch(shell, /<img(?![^>]*\salt=)[^>]*>/);
   assert.match(shell, /<nav aria-label="[^"]+">/);
   assert.match(shell, /href="\/modern\/profile"/);
+  assert.match(shell, /<form id="catalog-search" role="search">/);
+  assert.match(shell, /<label for="query">/);
+});
+
+test('catalog rendering uses safe DOM APIs', async () => {
+  const script = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+
+  assert.match(script, /textContent/);
+  assert.match(script, /replaceChildren/);
+  assert.doesNotMatch(script, /innerHTML|insertAdjacentHTML|document\.write/);
 });

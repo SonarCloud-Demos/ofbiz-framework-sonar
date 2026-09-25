@@ -37,6 +37,21 @@ class ExperienceBffApplicationTest {
             exchange.getResponseBody().write(body);
             exchange.close();
         });
+        reference.createContext("/api/catalog/products", exchange -> {
+            byte[] body = "{\"items\":[{\"id\":\"WG-1111\",\"name\":\"Gizmo\"}]}"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        reference.createContext("/api/catalog/categories", exchange -> {
+            byte[] body = "{\"items\":[{\"id\":\"CATALOG_DEMO\",\"name\":\"Demo products\"}]}"
+                    .getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
         reference.start();
         URI referenceUri = URI.create("http://localhost:" + reference.getAddress().getPort());
         bff = new ExperienceBffApplication(referenceUri, referenceUri, HttpClient.newHttpClient(),
@@ -61,6 +76,7 @@ class ExperienceBffApplicationTest {
         assertTrue(response.body().contains("Modern experience"));
         assertTrue(response.headers().firstValue("Content-Security-Policy").orElseThrow()
                 .contains("default-src 'self'"));
+        assertEquals(200, get("/catalog", null).statusCode());
     }
 
     @Test
@@ -80,6 +96,18 @@ class ExperienceBffApplicationTest {
         assertTrue(response.body().contains("request-42"));
         assertTrue(response.headers().firstValue("traceparent").orElseThrow()
                 .matches("00-[0-9a-f]{32}-[0-9a-f]{16}-01"));
+    }
+
+    @Test
+    void proxiesTheBoundedCatalogReadContract() throws Exception {
+        HttpResponse<String> response = get("/api/catalog/products?q=gizmo", "catalog-42");
+
+        assertEquals(200, response.statusCode());
+        assertTrue(response.body().contains("WG-1111"));
+        assertEquals("catalog-42", response.headers().firstValue("X-Correlation-ID").orElseThrow());
+        HttpRequest write = HttpRequest.newBuilder(baseUri.resolve("/api/catalog/products"))
+                .header("Authorization", authorization()).POST(HttpRequest.BodyPublishers.noBody()).build();
+        assertEquals(405, HttpClient.newHttpClient().send(write, HttpResponse.BodyHandlers.ofString()).statusCode());
     }
 
     @Test
@@ -124,6 +152,7 @@ class ExperienceBffApplicationTest {
         assertEquals(200, manifest.statusCode());
         assertTrue(manifest.body().contains("\"default\":\"legacy\""));
         assertTrue(manifest.body().contains("\"path\":\"/modern/profile\",\"runtime\":\"modern\""));
+        assertTrue(manifest.body().contains("\"path\":\"/catalog\",\"runtime\":\"modern\""));
         assertEquals(200, profile.statusCode());
         assertTrue(profile.body().contains("\"subject\":\"test-user\""));
         assertFalse(profile.body().contains("test-password"));
@@ -147,6 +176,13 @@ class ExperienceBffApplicationTest {
 
             assertEquals(307, response.statusCode());
             assertEquals("/webtools/control/main", response.headers().firstValue("Location").orElseThrow());
+            HttpRequest catalogRequest = HttpRequest.newBuilder(failbackUri.resolve("/api/catalog/products"))
+                    .header("Authorization", authorization()).GET().build();
+            HttpResponse<String> catalogResponse = HttpClient.newBuilder()
+                    .followRedirects(HttpClient.Redirect.NEVER).build()
+                    .send(catalogRequest, HttpResponse.BodyHandlers.ofString());
+            assertEquals(307, catalogResponse.statusCode());
+            assertEquals("/catalog/control/main", catalogResponse.headers().firstValue("Location").orElseThrow());
         } finally {
             failback.stop(0);
         }

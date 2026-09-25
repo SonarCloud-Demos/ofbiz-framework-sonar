@@ -13,6 +13,14 @@ services:
       start_period: 90s
     security_opt:
       - no-new-privileges:true
+    environment:
+      LEGACY_CATALOG_SYNC_TOKEN: ${LEGACY_CATALOG_SYNC_TOKEN:?Run local-dev/generate-local-secrets.sh}
+      OFBIZ_HOST: localhost,127.0.0.1,legacy-ofbiz
+    ports:
+      - '127.0.0.1:8080:8080'
+      - '127.0.0.1:8443:8443'
+    volumes:
+      - ./ofbiz-url.properties:/ofbiz/config/url.properties:ro
 
   reference-db:
     image: postgres:13
@@ -51,6 +59,53 @@ services:
     security_opt:
       - no-new-privileges:true
 
+  product-catalog-service:
+    build:
+      context: ..
+      dockerfile: services/product-catalog-service/Dockerfile
+    environment:
+      CATALOG_PORT: '8082'
+      JAVA_TOOL_OPTIONS: -Djdk.httpclient.allowRestrictedHeaders=host
+      OFBIZ_CATALOG_SNAPSHOT_URL: http://legacy-ofbiz:8080/catalog/control/modernCatalogSnapshot
+      OFBIZ_CATALOG_CHANGES_URL: http://legacy-ofbiz:8080/catalog/control/modernCatalogChanges
+      LEGACY_CATALOG_SYNC_TOKEN: ${LEGACY_CATALOG_SYNC_TOKEN:?Run local-dev/generate-local-secrets.sh}
+      CATALOG_DATABASE_URL: jdbc:postgresql://catalog-db:5432/catalog
+      CATALOG_DATABASE_USER: catalog
+      CATALOG_DATABASE_PASSWORD: ${CATALOG_DATABASE_PASSWORD:?Run local-dev/generate-local-secrets.sh}
+    depends_on:
+      legacy-ofbiz:
+        condition: service_healthy
+      catalog-db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD-SHELL, 'timeout 2 bash -c "</dev/tcp/127.0.0.1/8082"']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    read_only: true
+    volumes:
+      - catalog-shadow:/var/lib/catalog
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+  catalog-db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: catalog
+      POSTGRES_USER: catalog
+      POSTGRES_PASSWORD: ${CATALOG_DATABASE_PASSWORD:?Run local-dev/generate-local-secrets.sh}
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U catalog -d catalog']
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    volumes:
+      - catalog-data:/var/lib/postgresql/data
+    security_opt:
+      - no-new-privileges:true
+
   experience-bff:
     build:
       context: ..
@@ -60,6 +115,8 @@ services:
         condition: service_healthy
       reference-service:
         condition: service_healthy
+      product-catalog-service:
+        condition: service_healthy
     environment:
       BFF_PORT: '8443'
       BFF_KEYSTORE_PATH: /run/modern-tls/modern-local.p12
@@ -67,6 +124,7 @@ services:
       LOCAL_AUTH_USER: modern-user
       LOCAL_AUTH_PASSWORD: ${LOCAL_AUTH_PASSWORD:?Run local-dev/generate-local-secrets.sh}
       REFERENCE_SERVICE_URL: http://reference-service:8081
+      CATALOG_SERVICE_URL: http://product-catalog-service:8082
       LEGACY_SERVICE_URL: http://legacy-ofbiz:8080
     ports:
       - '127.0.0.1:8444:8443'
@@ -85,3 +143,5 @@ services:
 
 volumes:
   reference-data:
+  catalog-shadow:
+  catalog-data:

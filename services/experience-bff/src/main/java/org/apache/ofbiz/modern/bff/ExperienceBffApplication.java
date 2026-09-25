@@ -29,14 +29,17 @@ public final class ExperienceBffApplication {
     private static final System.Logger LOGGER = System.getLogger(ExperienceBffApplication.class.getName());
     private static final Map<String, String> SHELL_RESOURCES = Map.of(
             "/", "shell/index.html",
+            "/catalog", "shell/index.html",
             "/app.css", "shell/app.css",
             "/app.js", "shell/app.js");
     private static final Map<String, String> CONTENT_TYPES = Map.of(
             "/", "text/html; charset=utf-8",
+            "/catalog", "text/html; charset=utf-8",
             "/app.css", "text/css; charset=utf-8",
             "/app.js", "text/javascript; charset=utf-8");
 
     private final URI referenceUri;
+    private final URI catalogUri;
     private final URI legacyUri;
     private final HttpClient httpClient;
     private final byte[] expectedAuthorization;
@@ -45,12 +48,18 @@ public final class ExperienceBffApplication {
     private final Map<String, String> sessions = new ConcurrentHashMap<>();
 
     ExperienceBffApplication(URI referenceUri, URI legacyUri, HttpClient httpClient, String username, String password) {
-        this(referenceUri, legacyUri, httpClient, username, password, true);
+        this(referenceUri, referenceUri, legacyUri, httpClient, username, password, true);
     }
 
     ExperienceBffApplication(URI referenceUri, URI legacyUri, HttpClient httpClient, String username, String password,
             boolean modernRoutesEnabled) {
+        this(referenceUri, referenceUri, legacyUri, httpClient, username, password, modernRoutesEnabled);
+    }
+
+    ExperienceBffApplication(URI referenceUri, URI catalogUri, URI legacyUri, HttpClient httpClient, String username,
+            String password, boolean modernRoutesEnabled) {
         this.referenceUri = referenceUri;
+        this.catalogUri = catalogUri;
         this.legacyUri = legacyUri;
         this.httpClient = httpClient;
         this.authenticatedUsername = validatedUsername(username);
@@ -69,6 +78,8 @@ public final class ExperienceBffApplication {
         server.createContext("/health/live", exchange -> send(exchange, 200, JSON_CONTENT_TYPE,
                 "{\"status\":\"UP\"}"));
         server.createContext("/api/reference", this::reference);
+        server.createContext("/api/catalog/products", this::catalog);
+        server.createContext("/api/catalog/categories", this::catalog);
         server.createContext("/api/legacy/health", this::legacyHealth);
         server.createContext("/modern/profile", this::profile);
         server.createContext("/route-manifest.json", this::routeManifest);
@@ -103,8 +114,10 @@ public final class ExperienceBffApplication {
             return;
         }
         String profileRuntime = modernRoutesEnabled ? "modern" : "legacy";
+        String catalogRuntime = modernRoutesEnabled ? "modern" : "legacy";
         send(exchange, 200, JSON_CONTENT_TYPE, "{\"default\":\"legacy\",\"routes\":["
                 + "{\"path\":\"/modern/profile\",\"runtime\":\"" + profileRuntime + "\"},"
+                + "{\"path\":\"/catalog\",\"runtime\":\"" + catalogRuntime + "\"},"
                 + "{\"path\":\"/webtools/*\",\"runtime\":\"legacy\"}]}");
     }
 
@@ -199,6 +212,44 @@ public final class ExperienceBffApplication {
             sendUnavailable(exchange, correlationId);
         } catch (IOException unavailable) {
             sendUnavailable(exchange, correlationId);
+        }
+    }
+
+    private void catalog(HttpExchange exchange) throws IOException {
+        if (!authorize(exchange)) {
+            return;
+        }
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            methodNotAllowed(exchange, "GET");
+            return;
+        }
+        if (!modernRoutesEnabled) {
+            exchange.getResponseHeaders().set("Location", "/catalog/control/main");
+            send(exchange, 307, JSON_CONTENT_TYPE, "{\"route\":\"legacy\",\"reason\":\"failback\"}");
+            return;
+        }
+        String pathAndQuery = exchange.getRequestURI().getRawPath();
+        if (exchange.getRequestURI().getRawQuery() != null) {
+            pathAndQuery += '?' + exchange.getRequestURI().getRawQuery();
+        }
+        proxyCatalog(exchange, catalogUri.resolve(pathAndQuery));
+    }
+
+    private void proxyCatalog(HttpExchange exchange, URI target) throws IOException {
+        String correlationId = correlationId(exchange);
+        HttpRequest request = HttpRequest.newBuilder(target)
+                .timeout(Duration.ofSeconds(3))
+                .header(CORRELATION_HEADER, correlationId)
+                .GET().build();
+        try {
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            exchange.getResponseHeaders().set(CORRELATION_HEADER, correlationId);
+            send(exchange, response.statusCode(), JSON_CONTENT_TYPE, response.body());
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            send(exchange, 503, JSON_CONTENT_TYPE, "{\"error\":\"catalog_unavailable\"}");
+        } catch (IOException unavailable) {
+            send(exchange, 503, JSON_CONTENT_TYPE, "{\"error\":\"catalog_unavailable\"}");
         }
     }
 

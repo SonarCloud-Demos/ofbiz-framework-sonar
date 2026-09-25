@@ -5,6 +5,7 @@
 def modernProjectPaths = [
         ':services:reference-service',
         ':services:experience-bff',
+        ':services:product-catalog-service',
         ':web:shell',
 ]
 
@@ -39,6 +40,7 @@ tasks.register('verifyLockfiles') {
             'settings-gradle.lockfile',
             'services/reference-service/gradle.lockfile',
             'services/experience-bff/gradle.lockfile',
+            'services/product-catalog-service/gradle.lockfile',
             'web/shell/package-lock.json',
     )
     inputs.files(requiredLocks)

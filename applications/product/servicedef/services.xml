@@ -1833,6 +1833,17 @@ under the License.
         <auto-attributes mode="IN" include="pk"/>
     </service>
 
+    <service name="enqueueModernCatalogUpsert" engine="java"
+            location="org.apache.ofbiz.product.product.ModernCatalogReadEvents" invoke="enqueueUpsert" auth="false">
+        <description>Append catalog UPSERT events to the migration outbox.</description>
+        <attribute name="changedInstance" type="org.apache.ofbiz.entity.GenericValue" mode="IN" optional="false"/>
+    </service>
+    <service name="enqueueModernCatalogDelete" engine="java"
+            location="org.apache.ofbiz.product.product.ModernCatalogReadEvents" invoke="enqueueDelete" auth="false">
+        <description>Append a catalog DELETE event to the migration outbox.</description>
+        <attribute name="changedInstance" type="org.apache.ofbiz.entity.GenericValue" mode="IN" optional="false"/>
+    </service>
+
     <!--Permission services -->
 
     <service name="checkProductRelatedPermission" engine="groovy"

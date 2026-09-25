@@ -13,12 +13,19 @@
       <span class="runtime-marker" aria-label="This page uses the modern application">Modern experience</span>
     </header>
     <main>
-      <h1>Modern platform diagnostics</h1>
-      <p>This harmless route verifies the shell, BFF, and reference-service path.</p>
+      <h1>Product catalog</h1>
+      <p>Browse the read-only catalog shadow. Product changes remain in OFBiz.</p>
       <nav aria-label="Modern application">
+        <a href="/catalog">Catalog</a>
         <a href="/modern/profile">Profile diagnostics</a>
       </nav>
-      <output id="status" aria-live="polite">Checking service connectivity…</output>
+      <form id="catalog-search" role="search">
+        <label for="query">Search products</label>
+        <input id="query" name="q" type="search" maxlength="100">
+        <button type="submit">Search</button>
+      </form>
+      <output id="status" aria-live="polite">Loading catalog…</output>
+      <ul id="catalog-results" aria-label="Catalog products"></ul>
     </main>
   </div>
   <script src="/app.js" type="module"></script>

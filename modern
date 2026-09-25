@@ -14,7 +14,7 @@ case "$command_name" in
     ;;
   up)
     local-dev/generate-local-tls.sh
-    ./gradlew :services:reference-service:installDist :services:experience-bff:installDist
+    ./gradlew :services:reference-service:installDist :services:product-catalog-service:installDist :services:experience-bff:installDist
     exec docker compose --env-file local-dev/.env -f local-dev/compose.yaml --profile legacy up --build --detach "$@"
     ;;
   smoke)

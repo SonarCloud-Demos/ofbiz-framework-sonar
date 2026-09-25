@@ -24,11 +24,12 @@ public final class ExperienceBffMain {
     public static void main(String[] args) throws IOException, GeneralSecurityException {
         int port = Integer.parseInt(environment("BFF_PORT", "8443"));
         URI referenceUri = URI.create(environment("REFERENCE_SERVICE_URL", "http://localhost:8081"));
+        URI catalogUri = URI.create(environment("CATALOG_SERVICE_URL", "http://localhost:8082"));
         URI legacyUri = URI.create(environment("LEGACY_SERVICE_URL", "http://localhost:8080"));
         String username = environment("LOCAL_AUTH_USER", "modern-user");
         String password = requiredEnvironment("LOCAL_AUTH_PASSWORD");
         boolean modernRoutesEnabled = Boolean.parseBoolean(environment("MODERN_ROUTES_ENABLED", "true"));
-        ExperienceBffApplication application = new ExperienceBffApplication(referenceUri, legacyUri,
+        ExperienceBffApplication application = new ExperienceBffApplication(referenceUri, catalogUri, legacyUri,
                 HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(2))
                 .build(), username, password, modernRoutesEnabled);

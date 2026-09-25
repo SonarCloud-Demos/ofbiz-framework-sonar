@@ -67,4 +67,5 @@ activeComponents().each { File component ->
 // discovered from ofbiz-component.xml, which keeps the service build graph reviewable.
 include ':services:reference-service'
 include ':services:experience-bff'
+include ':services:product-catalog-service'
 include ':web:shell'

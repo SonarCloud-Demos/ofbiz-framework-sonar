@@ -29,6 +29,18 @@ under the License.
         <condition field-name="autoCreateKeywords" operator="not-equals" value="N"/>
         <action service="indexProductKeywords" mode="sync"/>
     </eca>
+    <eca entity="Product" operation="create-store" event="return">
+        <action service="enqueueModernCatalogUpsert" mode="sync" value-attr="changedInstance"/>
+    </eca>
+    <eca entity="Product" operation="remove" event="return">
+        <action service="enqueueModernCatalogDelete" mode="sync" value-attr="changedInstance"/>
+    </eca>
+    <eca entity="ProductPrice" operation="create-store-remove" event="return">
+        <action service="enqueueModernCatalogUpsert" mode="sync" value-attr="changedInstance"/>
+    </eca>
+    <eca entity="ProductCategory" operation="store" event="return">
+        <action service="enqueueModernCatalogUpsert" mode="sync" value-attr="changedInstance"/>
+    </eca>
     <eca entity="GoodIdentification" operation="create-store" event="return">
         <action service="indexProductKeywords" mode="sync"/>
     </eca>

@@ -1,0 +1,5 @@
+# Transitional anti-corruption snapshot. OFBiz remains the authority.
+# productId|name|categoryId|categoryName|status|priceReference
+WG-1111|Gizmo|CATALOG_DEMO|Demo products|ACTIVE|USD 19.99
+WG-1112|Premium Gizmo|CATALOG_DEMO|Demo products|ACTIVE|USD 29.99
+SV-1000|Installation service|SERVICES|Services|ACTIVE|USD 75.00
