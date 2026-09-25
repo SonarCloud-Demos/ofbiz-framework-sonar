@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<entitymodel xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="https://ofbiz.apache.org/dtds/entitymodel.xsd">
+    <title>Modern catalog migration entities</title>
+    <description>Transactional outbox used by the product catalog migration.</description>
+    <version>1.0</version>
+    <entity entity-name="ModernCatalogChange" package-name="org.apache.ofbiz.product.product"
+            title="Modern Catalog Change" never-cache="true">
+        <field name="changeSequence" type="numeric"/>
+        <field name="eventType" type="id"/>
+        <field name="productId" type="id"/>
+        <field name="productName" type="long-varchar"/>
+        <field name="productCategoryId" type="id"/>
+        <field name="categoryName" type="long-varchar"/>
+        <field name="catalogStatus" type="id"/>
+        <field name="displayedPriceReference" type="long-varchar"/>
+        <field name="occurredAt" type="date-time"/>
+        <prim-key field="changeSequence"/>
+    </entity>
+</entitymodel>

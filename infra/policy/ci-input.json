@@ -1,0 +1,11 @@
+{
+  "environment": "test",
+  "production_gate_approved": false,
+  "long_lived_client_secret": false,
+  "location": "westeurope",
+  "public_stateful_endpoint": false,
+  "managed_identity_enabled": true,
+  "diagnostics_complete": true,
+  "stateful_deletion_locks": false,
+  "missing_required_tags": []
+}

@@ -1,0 +1,49 @@
+openapi: 3.0.3
+info:
+  title: Product catalog read API
+  version: 1.0.0
+  description: Bounded Phase 4 read contract. OFBiz remains the system of record.
+paths:
+  /api/catalog/products:
+    get:
+      operationId: listProducts
+      parameters:
+        - name: q
+          in: query
+          schema: {type: string, maxLength: 100}
+        - name: categoryId
+          in: query
+          schema: {type: string, maxLength: 100}
+      responses:
+        '200':
+          description: Matching visible products
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, count, refreshedAt]
+                properties:
+                  items:
+                    type: array
+                    items: {$ref: '#/components/schemas/Product'}
+                  count: {type: integer, minimum: 0}
+                  refreshedAt: {type: string, format: date-time}
+  /api/catalog/categories:
+    get:
+      operationId: listCategories
+      responses:
+        '200':
+          description: Visible catalog categories
+components:
+  schemas:
+    Product:
+      type: object
+      required: [id, name, categoryId, status, displayedPriceReference]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        categoryId: {type: string}
+        status: {type: string, enum: [ACTIVE]}
+        displayedPriceReference:
+          type: string
+          description: Legacy display value; this service does not calculate price.

@@ -1,0 +1,63 @@
+plugins {
+    id 'application'
+    id 'jacoco'
+}
+
+group = 'org.apache.ofbiz.modern'
+version = '0.1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+application {
+    mainClass = 'org.apache.ofbiz.modern.reference.ReferenceServiceMain'
+}
+
+configurations {
+    pluginLibsCompile
+    pluginLibsRuntime
+    pluginLibsCompileOnly
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+    lockMode = LockMode.STRICT
+}
+
+dependencies {
+    testImplementation libs.junit.jupiter.api
+    testRuntimeOnly libs.junit.jupiter.engine
+    testRuntimeOnly libs.junit.platform.launcher
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    classDirectories.setFrom(sourceSets.main.output.asFileTree.matching {
+        exclude '**/*Main.class'
+    })
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+jacocoTestCoverageVerification {
+    classDirectories.setFrom(sourceSets.main.output.asFileTree.matching {
+        exclude '**/*Main.class'
+    })
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80
+            }
+        }
+    }
+}

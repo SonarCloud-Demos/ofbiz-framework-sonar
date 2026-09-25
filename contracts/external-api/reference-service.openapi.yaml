@@ -1,0 +1,32 @@
+openapi: 3.1.0
+info:
+  title: Phase 1 reference service
+  version: 0.1.0
+paths:
+  /api/reference:
+    get:
+      operationId: getReferenceDiagnostic
+      responses:
+        '200':
+          description: Correlated diagnostic response
+          headers:
+            X-Correlation-ID:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReferenceDiagnostic'
+components:
+  schemas:
+    ReferenceDiagnostic:
+      type: object
+      additionalProperties: false
+      required: [service, correlationId]
+      properties:
+        service:
+          const: reference-service
+        correlationId:
+          type: string
+          minLength: 1
+          maxLength: 128

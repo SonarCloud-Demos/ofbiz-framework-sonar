@@ -1,0 +1,15 @@
+name: Phase 2 infrastructure apply (disabled)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    if: ${{ false }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Infrastructure waiver
+        run: echo "Azure apply remains disabled until the deferred operational gate is approved."

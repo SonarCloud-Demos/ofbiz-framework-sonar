@@ -62,3 +62,10 @@ activeComponents().each { File component ->
         include subProject.replaceAll(fileSep, ':')
     
 }
+
+// Modern deployables are registered explicitly. Unlike OFBiz components they are not
+// discovered from ofbiz-component.xml, which keeps the service build graph reviewable.
+include ':services:reference-service'
+include ':services:experience-bff'
+include ':services:product-catalog-service'
+include ':web:shell'

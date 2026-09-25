@@ -56,6 +56,19 @@ under the License.
         <response name="success" type="view" value="main"/>
     </request-map>
 
+    <request-map uri="modernCatalogSnapshot">
+        <security https="false" auth="false"/>
+        <event type="java" path="org.apache.ofbiz.product.product.ModernCatalogReadEvents" invoke="snapshot"/>
+        <response name="success" type="none"/>
+        <response name="error" type="none"/>
+    </request-map>
+    <request-map uri="modernCatalogChanges">
+        <security https="false" auth="false"/>
+        <event type="java" path="org.apache.ofbiz.product.product.ModernCatalogReadEvents" invoke="changes"/>
+        <response name="success" type="none"/>
+        <response name="error" type="none"/>
+    </request-map>
+
     <!-- ================ Misc. Requests ================= -->
     <request-map uri="FastLoadCache">
         <security https="true" auth="true"/>

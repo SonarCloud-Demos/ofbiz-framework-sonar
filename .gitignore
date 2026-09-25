@@ -26,6 +26,7 @@ hooks/
 .project
 .settings
 .gradle/
+.terraform/
 .groovy
 .pc
 .DS_Store
@@ -50,3 +51,6 @@ claude_session_id
 /docs/asciidoc/images/
 docker/examples/postgres-demo/logs/
 local-dev/logs/
+local-dev/.env
+local-dev/certs/*
+!local-dev/certs/README.md

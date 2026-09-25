@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OFBiz modern shell</title>
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div class="shell" data-runtime="modern">
+    <header>
+      <strong>OFBiz</strong>
+      <span class="runtime-marker" aria-label="This page uses the modern application">Modern experience</span>
+    </header>
+    <main>
+      <h1>Product catalog</h1>
+      <p>Browse the read-only catalog shadow. Product changes remain in OFBiz.</p>
+      <nav aria-label="Modern application">
+        <a href="/catalog">Catalog</a>
+        <a href="/modern/profile">Profile diagnostics</a>
+      </nav>
+      <form id="catalog-search" role="search">
+        <label for="query">Search products</label>
+        <input id="query" name="q" type="search" maxlength="100">
+        <button type="submit">Search</button>
+      </form>
+      <output id="status" aria-live="polite">Loading catalog…</output>
+      <ul id="catalog-results" aria-label="Catalog products"></ul>
+    </main>
+  </div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

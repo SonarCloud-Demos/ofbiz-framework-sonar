@@ -1,0 +1,130 @@
+/*
+ * Phase 1 build integration for explicitly registered modern modules.
+ */
+
+def modernProjectPaths = [
+        ':services:reference-service',
+        ':services:experience-bff',
+        ':services:product-catalog-service',
+        ':web:shell',
+]
+
+tasks.register('generateLockfiles') {
+    group = 'Dependency management'
+    description = 'Resolves repository dependency graphs and writes Gradle lockfiles.'
+    dependsOn modernProjectPaths.collect { "${it}:dependencies" }
+    doFirst {
+        if (!gradle.startParameter.writeDependencyLocks) {
+            throw new GradleException('Run ./gradlew generateLockfiles --write-locks')
+        }
+    }
+    doLast {
+        allprojects.each { lockedProject ->
+            lockedProject.configurations.findAll { it.canBeResolved }.each { configuration ->
+                configuration.resolve()
+            }
+        }
+    }
+}
+
+tasks.register('verifyLockfiles') {
+    group = 'Verification'
+    description = 'Fails when a required modern Gradle or JavaScript lockfile is absent.'
+    dependsOn ':web:shell:npmInstall'
+    def manifestLocks = fileTree(rootDir) {
+        include '**/build.gradle'
+        exclude '**/build/**', '**/.gradle/**'
+    }.files.collect { manifest -> new File(manifest.parentFile, 'gradle.lockfile') }
+    def requiredLocks = files(
+            manifestLocks,
+            'settings-gradle.lockfile',
+            'services/reference-service/gradle.lockfile',
+            'services/experience-bff/gradle.lockfile',
+            'services/product-catalog-service/gradle.lockfile',
+            'web/shell/package-lock.json',
+    )
+    inputs.files(requiredLocks)
+    doLast {
+        def missing = requiredLocks.files.findAll { !it.isFile() }
+        if (!missing.isEmpty()) {
+            throw new GradleException('Required lockfiles are missing:\n' +
+                    missing.collect { " - ${rootDir.toPath().relativize(it.toPath())}" }.join('\n') +
+                    '\nRun ./gradlew generateLockfiles --write-locks and commit the results.')
+        }
+    }
+}
+
+tasks.register('updateLockfiles') {
+    group = 'Dependency management'
+    description = 'Updates reviewed modern dependency locks; pass --update-locks group:name as needed.'
+    dependsOn 'generateLockfiles'
+}
+
+tasks.register('verifyModernModuleRegistration') {
+    group = 'Verification'
+    description = 'Ensures every modern deployable is registered in Gradle and SonarQube scope.'
+    def modernRoots = ['services', 'web', 'contracts', 'platform', 'infra']
+    inputs.files('settings.gradle', 'build.gradle', 'sonar-project.properties')
+    doLast {
+        def settingsText = file('settings.gradle').text
+        modernProjectPaths.each { modernProjectPath ->
+            if (!settingsText.contains("include '${modernProjectPath}'")) {
+                throw new GradleException("Modern module ${modernProjectPath} is not explicitly registered")
+            }
+        }
+        def sonarText = file('sonar-project.properties').text
+        modernRoots.each { path ->
+            if (!sonarText.readLines().find { it.startsWith('sonar.sources=') }?.split(',')?.contains(path)) {
+                throw new GradleException("Modern source root ${path} is absent from sonar-project.properties")
+            }
+        }
+    }
+}
+
+tasks.register('verifyModernArchitecture') {
+    group = 'Verification'
+    description = 'Prevents modern services from importing OFBiz implementation packages.'
+    def serviceSources = fileTree('services') {
+        include '**/src/main/**/*.java', '**/src/main/**/*.groovy'
+        exclude '**/build/**'
+    }
+    inputs.files(serviceSources)
+    doLast {
+        def forbiddenImport = ~/^\s*import\s+org\.apache\.ofbiz\.(?!modern(?:\.|;)).*/
+        def violations = []
+        serviceSources.each { sourceFile ->
+            sourceFile.readLines().eachWithIndex { line, index ->
+                if (forbiddenImport.matcher(line).matches()) {
+                    violations << "${rootDir.toPath().relativize(sourceFile.toPath())}:${index + 1}: ${line.trim()}"
+                }
+            }
+        }
+        if (!violations.isEmpty()) {
+            throw new GradleException('Modern services must use contracts or legacy adapters, not OFBiz code:\n' +
+                    violations.collect { " - ${it}" }.join('\n'))
+        }
+    }
+}
+
+tasks.register('verifyTerraform') {
+    group = 'Verification'
+    description = 'Formats, validates, and tests all unapplied Phase 2 Terraform roots.'
+    inputs.files(fileTree('infra') {
+        include '**/*.tf', '**/*.tftest.hcl', '**/.terraform.lock.hcl', 'verify.sh'
+        exclude '**/.terraform/**'
+    })
+    doLast {
+        exec {
+            commandLine 'sh', 'infra/verify.sh'
+        }
+    }
+}
+
+tasks.named('build') {
+    dependsOn modernProjectPaths.collect { "${it}:build" }
+    dependsOn 'verifyLockfiles', 'verifyModernArchitecture', 'verifyModernModuleRegistration', 'verifyTerraform'
+}
+
+tasks.named('check') {
+    dependsOn 'verifyModernArchitecture', 'verifyModernModuleRegistration', 'verifyTerraform'
+}

@@ -20,3 +20,8 @@
 plugins {
     id 'groovy-gradle-plugin'
 }
+
+dependencyLocking {
+    lockAllConfigurations()
+    lockMode = LockMode.STRICT
+}
