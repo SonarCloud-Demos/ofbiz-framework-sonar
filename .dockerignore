@@ -22,6 +22,8 @@ Dockerfile
 /bin/
 /build/
 /runtime/
+/local-dev/.env
+/local-dev/certs/
 /themes/common-theme/webapp/common/js/node_modules/
 /themes/common-theme/webapp/common-theme/js/node_modules/
 /plugins/.svn

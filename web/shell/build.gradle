@@ -1,0 +1,22 @@
+plugins {
+    id 'ofbiz-node-conventions'
+}
+
+configurations {
+    pluginLibsCompile
+    pluginLibsRuntime
+    pluginLibsCompileOnly
+}
+
+node {
+    nodeProjectDir = file('.')
+}
+
+tasks.register('npmTest', com.github.gradle.node.npm.task.NpmTask) {
+    dependsOn npmInstall
+    args = ['test']
+}
+
+tasks.named('check') {
+    dependsOn npmTest
+}

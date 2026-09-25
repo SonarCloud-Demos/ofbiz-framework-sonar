@@ -14,6 +14,8 @@ These decisions are accepted for the platform foundation and first pilot. Each i
 
 **Rationale:** The repository and team-facing build are Java/Gradle-centric; one backend stack minimizes early operational variance. TypeScript is appropriate for the required modern UI.
 
+**Phase 1 implementation note (2026-09-25):** The reference service and BFF use the Java 17 JDK HTTP server temporarily. The proposed Spring Boot 3.5.12/Actuator/JDBC/Flyway/Micrometer graph failed dependency policy because it resolved prohibited-license components and high-severity vulnerable components. No exception was granted and the rejected dependencies were removed. Revisit this ADR, validate an acceptable locked graph, and record the decision before a business service adopts Spring Boot or selects a replacement stack.
+
 ## ADR-003: Contract-first APIs and events
 
 **Decision:** Use OpenAPI for HTTP contracts, AsyncAPI/JSON Schema for events, and a common event envelope carrying ID, type/version, time, correlation, causation, and actor/tenant metadata when applicable. Commands use APIs; propagation uses facts/events.

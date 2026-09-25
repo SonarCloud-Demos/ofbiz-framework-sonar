@@ -29,19 +29,32 @@ Proceed only after production route volume and latency are known, catalog owners
 
 ## Phase 0 pilot validation record
 
-This record is the sole remaining Phase 0 completion gate under the explicit waiver dated 2026-09-25. Validation here selects and bounds the pilot; it does not assert that the pilot is implemented or production-ready.
+This record completed the sole remaining Phase 0 gate under the explicit waiver dated 2026-09-25. Validation selects and bounds the pilot; it does not assert that the pilot is implemented or production-ready.
 
-| Field | Required value |
+| Field | Validated value |
 | --- | --- |
-| Selected pilot | Product catalog read, or a documented replacement |
-| Business outcome | Specific user/business value to test |
-| Included routes and data | Explicit route and entity/read-model scope |
-| Excluded behavior | Writes and other behavior intentionally outside the pilot |
-| Invariants accepted | Approved list from this scorecard and `critical-flows.md` |
-| Rollback boundary accepted | OFBiz remains writer; route can return completely to legacy |
-| Accountable approver | Named person or recorded governance body |
-| Evidence reference | Ticket, decision record, or meeting record |
-| Validation date | ISO date |
-| Decision | Approved, rejected, or revise |
+| Selected pilot | Product catalog read |
+| Business outcome | Prove that users can browse and search a modern product/category experience with equivalent visibility, scoping, and displayed product facts while retaining immediate fallback to OFBiz. |
+| Included routes and data | Read representations corresponding to `/catalog/control/main`, `/catalog/control/advancedsearch`, `/catalog/control/keywordsearch`, `/catalog/control/FindProductById`, and `/catalog/control/FindCategory`. The pilot read model contains `Product`, `ProductCategory`, `ProductCategoryMember`, product/category status and effective dates, product attributes and features required by those views, and price references already displayed by the selected legacy result. Exact modern routes and contracts are defined during Phase 4 and mapped to these legacy behaviors before implementation. |
+| Excluded behavior | All create/update/delete operations; catalog administration; price or promotion calculation and eligibility; inventory availability or reservation; media-binary migration; store configuration; subscriptions; exports; checkout/order behavior; write-side ECAs, scheduled jobs, and external integrations. Links to excluded behavior remain on legacy routes. |
+| Invariants accepted | Stable product/category identifiers; category membership; status and effective-date filtering; required attributes/features; displayed price-reference parity without moving price authority; no visibility of deleted, expired, restricted, unauthorized, or out-of-scope records; approved store/catalog scoping; classified reconciliation mismatches; approved shadow freshness; and correct modern-marker behavior. |
+| Rollback boundary accepted | OFBiz remains the sole writer and source of authority. The modern store is a disposable shadow read model. A server-controlled route switch returns the complete pilot to legacy without reverse synchronization or data recovery. |
+| Accountable approver | Denis Troller, repository maintainer |
+| Evidence reference | This decision record; `phase-0-discovery.md`; `critical-flows.md`; `data-ownership.md`; and generated catalogs under `docs/architecture/inventory/`. |
+| Validation date | 2026-09-25 |
+| Decision | Approved for Phase 0 exit and Phase 1/Phase 4 planning. Not approved for implementation rollout or production traffic until the go/no-go gates below are satisfied. |
 
-Phase 0 remains open while any field is blank. Once approved, update `phase-0-discovery.md` from “pending validation” to “complete” and retain this record as decision evidence.
+## Validation rationale and carried gates
+
+The pilot is approved because it is predominantly read-only, has visible user value, supports shadow comparison, and can fall back by routing while OFBiz retains write authority. The repository inventory also shows why its scope must remain narrow: the provisional product-catalog context contains hundreds of routes and services plus ECAs, a scheduled job, and integration candidates that are not part of this pilot.
+
+Before implementation or production rollout, the responsible slice team must still:
+
+- validate the selected legacy behaviors and entity/read-model fields with catalog owners;
+- collect representative route volume, latency, error, security, and support baselines;
+- define API/BFF contracts, SLOs, reconciliation tolerances, and an observation window;
+- inventory and contract the pricing, content, identity/authorization, and store-scoping dependencies used by the selected views;
+- pass security, accessibility, load, authorization, reconciliation, and marker tests; and
+- rehearse shadow refresh failure, stale-data handling, and complete route rollback.
+
+Failure to close any applicable gate requires revising the scope or reassessing content/media read as the fallback pilot.

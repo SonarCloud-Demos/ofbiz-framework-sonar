@@ -335,7 +335,7 @@ Exit criteria:
 - Current performance, correctness, security, and operational baselines are measurable.
 - The first slice has explicit invariants, rollback boundaries, and acceptance tests.
 
-Project-specific exit decision dated 2026-09-25: explicit validation of the selected pilot is the sole remaining Phase 0 completion gate. Named-person ownership acceptance, exhaustive runtime validation, and populated production baselines are waived for Phase 0 exit only. They remain mandatory just-in-time inputs to the readiness gate of every production slice that depends on them; the waiver does not relax security, correctness, compliance, data ownership, reconciliation, rollback, or operational-readiness requirements.
+Project-specific exit decision dated 2026-09-25: the product-catalog read pilot is explicitly validated in `docs/architecture/pilot-scorecard.md`, completing Phase 0. Named-person ownership acceptance beyond the pilot approver, exhaustive runtime validation, and populated production baselines are waived for Phase 0 exit only. They remain mandatory just-in-time inputs to the readiness gate of every production slice that depends on them; the waiver does not relax security, correctness, compliance, data ownership, reconciliation, rollback, or operational-readiness requirements.
 
 ### Phase 1 — Monorepo build and local platform foundation
 

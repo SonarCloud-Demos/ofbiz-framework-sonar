@@ -47,7 +47,10 @@ COPY lib/ lib/
 # We use a regex to match the plugins directory to avoid a build error when the directory doesn't exist.
 COPY plugin[s]/ plugins/
 COPY themes/ themes/
-COPY APACHE2_HEADER build.gradle common.gradle gradle.properties NOTICE settings.gradle dependencies.gradle test-reports.gradle .
+COPY services/ services/
+COPY web/ web/
+COPY APACHE2_HEADER build.gradle common.gradle dependencies.gradle gradle.lockfile gradle.properties NOTICE \
+    settings-gradle.lockfile settings.gradle test-reports.gradle .
 
 # Build OFBiz while mounting a gradle cache
 RUN --mount=type=cache,id=gradle-cache,sharing=locked,target=/root/.gradle \

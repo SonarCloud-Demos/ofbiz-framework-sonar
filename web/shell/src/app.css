@@ -1,0 +1,29 @@
+:root {
+  color-scheme: light dark;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  align-items: center;
+  border-bottom: 1px solid #777;
+  display: flex;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+main {
+  margin: 3rem auto;
+  max-width: 50rem;
+  padding: 0 1rem;
+}
+
+.runtime-marker {
+  background: #005ea8;
+  border-radius: 0.25rem;
+  color: #fff;
+  padding: 0.35rem 0.6rem;
+}

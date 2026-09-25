@@ -2,7 +2,7 @@
 
 ## Status
 
-Phase 0 repository discovery is implemented and reproducible. By explicit project decision on 2026-09-25, pilot validation is the sole remaining Phase 0 completion gate. Named-owner acceptance, exhaustive runtime validation, and production baseline collection are waived as Phase 0 exit criteria. They remain recorded risks and mandatory readiness work for any affected production slice.
+Phase 0 is complete. Repository discovery is implemented and reproducible, and the product-catalog read pilot was explicitly validated on 2026-09-25. Named-owner acceptance beyond the pilot approver, exhaustive runtime validation, and production baseline collection remain recorded risks and mandatory readiness work for any affected production slice.
 
 Run the inventory and its tests with:
 
@@ -56,9 +56,9 @@ Every catalog row carries `target_context`, `owner_role`, and `owner_status`. `o
 | Critical routes and scheduled/integration flows have an owner and dependency record | Waived for Phase 0 exit | All discovered rows have a provisional owner role and source evidence. Named-person acceptance and production-use validation move to slice readiness. |
 | Candidate boundaries and first pilot have evidence-based ADRs | Complete for pilot | Context map, ADRs, and pilot scorecard select product-catalog read conditionally. |
 | Performance, correctness, security, and operational baselines are measurable | Waived for Phase 0 exit | Static counts and a future measurement design exist. Concrete values remain required before an affected production cutover. |
-| First slice has invariants, rollback boundaries, and acceptance tests | Pending validation | Catalog-read invariants and gates are in `critical-flows.md` and `pilot-scorecard.md`. Explicit pilot validation is the only remaining Phase 0 gate. |
+| First slice has invariants, rollback boundaries, and acceptance tests | Complete for pilot selection | The approved scope, invariants, rollback boundary, exclusions, and carried implementation gates are recorded in `pilot-scorecard.md`. |
 
-Phase 0 becomes complete when the pilot validation record in `pilot-scorecard.md` is filled in and approved. The waiver does not authorize production cutover, waive security or correctness controls, establish data ownership, or satisfy a slice's readiness/completion gates. Waived discovery work must be completed just in time for every slice that relies on it.
+Phase 0 was completed when the pilot validation record in `pilot-scorecard.md` was approved on 2026-09-25. The approval does not authorize implementation rollout or production cutover, waive security or correctness controls, establish data ownership, or satisfy a slice's readiness/completion gates. Waived discovery work must be completed just in time for every slice that relies on it.
 
 ## Explicit Phase 0 waiver
 
