@@ -445,6 +445,13 @@ public final class FileUtil {
                     }
                 } else {
                     newFile = new File(outputFolder, ze.getName());
+                    String destDirPath = folder.getCanonicalPath() + File.separator;
+                    if (!newFile.getCanonicalPath().startsWith(destDirPath)) {
+                        // Skip entries resolving outside of the target folder
+                        zis.closeEntry();
+                        ze = zis.getNextEntry();
+                        continue;
+                    }
                 }
                 //create all non existing folders
                 //else you will hit FileNotFoundException for compressed folder
