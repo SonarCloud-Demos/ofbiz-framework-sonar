@@ -352,6 +352,9 @@
         <value xml:lang="zh">财务账目（FinAccount）部分还款；补充储蓄不足以还款！</value>
         <value xml:lang="zh-TW">財務帳目(FinAccount)部分還款;補充儲蓄不足以還款！</value>
     </property>
+    <property key="AccountingFinAccountPartyNotAuthorized">
+        <value xml:lang="en">Party ID ${partyId} is not the owner of financial account ${finAccountId} and does not have permission to transact on it.</value>
+    </property>
     <property key="AccountingFinAccountPinCodeCombinatorNotFound">
         <value xml:lang="ar">لا يوجد تركيبة كلمة السر/الرمز للحساب المالي</value>
         <value xml:lang="de">Finanzkonto PIN/CODE Kombination nicht gefunden</value>

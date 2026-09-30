@@ -42,6 +42,7 @@ import org.apache.ofbiz.entity.util.EntityUtilProperties;
 import org.apache.ofbiz.order.finaccount.FinAccountHelper;
 import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.product.store.ProductStoreWorker;
+import org.apache.ofbiz.security.Security;
 import org.apache.ofbiz.service.DispatchContext;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
@@ -539,6 +540,7 @@ public class FinAccountPaymentServices {
     public static Map<String, Object> finAccountWithdraw(DispatchContext dctx, Map<String, Object> context) {
         LocalDispatcher dispatcher = dctx.getDispatcher();
         Delegator delegator = dctx.getDelegator();
+        Security security = dctx.getSecurity();
         Locale locale = (Locale) context.get("locale");
 
         GenericValue userLogin = (GenericValue) context.get("userLogin");
@@ -578,10 +580,10 @@ public class FinAccountPaymentServices {
             return ServiceUtil.returnError(e.getMessage());
         }
 
-        // verify we have a financial account
-        if (finAccount == null) {
-            return ServiceUtil.returnError(UtilProperties.getMessage(RES_ERROR,
-                    "AccountingFinAccountNotFound", UtilMisc.toMap("finAccountId", ""), locale));
+        // verify we have a financial account and the caller is authorized to transact on it
+        String validationError = validateFinAccountForTransaction(security, finAccount, userLogin, finAccountId, locale);
+        if (validationError != null) {
+            return ServiceUtil.returnError(validationError);
         }
 
         // make sure the fin account itself has not expired
@@ -639,6 +641,7 @@ public class FinAccountPaymentServices {
     public static Map<String, Object> finAccountDeposit(DispatchContext dctx, Map<String, Object> context) {
         LocalDispatcher dispatcher = dctx.getDispatcher();
         Delegator delegator = dctx.getDelegator();
+        Security security = dctx.getSecurity();
         Locale locale = (Locale) context.get("locale");
 
         GenericValue userLogin = (GenericValue) context.get("userLogin");
@@ -670,10 +673,10 @@ public class FinAccountPaymentServices {
                     "AccountingFinAccountNotFound", UtilMisc.toMap("finAccountId", finAccountId), locale));
         }
 
-        // verify we have a financial account
-        if (finAccount == null) {
-            return ServiceUtil.returnError(UtilProperties.getMessage(RES_ERROR,
-                    "AccountingFinAccountNotFound", UtilMisc.toMap("finAccountId", ""), locale));
+        // verify we have a financial account and the caller is authorized to transact on it
+        String validationError = validateFinAccountForTransaction(security, finAccount, userLogin, finAccountId, locale);
+        if (validationError != null) {
+            return ServiceUtil.returnError(validationError);
         }
 
         // make sure the fin account itself has not expired
@@ -942,6 +945,33 @@ public class FinAccountPaymentServices {
         }
 
         return ServiceUtil.returnSuccess();
+    }
+
+    private static boolean isAuthorizedToTransactOnFinAccount(Security security, GenericValue finAccount, GenericValue userLogin) {
+        if (security.hasEntityPermission("ACCOUNTING", "_CREATE", userLogin)) {
+            return true;
+        }
+        String ownerPartyId = finAccount.getString("ownerPartyId");
+        return userLogin != null && UtilValidate.isNotEmpty(ownerPartyId) && ownerPartyId.equals(userLogin.getString("partyId"));
+    }
+
+    /**
+     * Validates that the financial account exists and that the caller is authorized to transact on it.
+     * @return the localized error message when the account is missing or not authorized, or {@code null} when valid.
+     */
+    private static String validateFinAccountForTransaction(Security security, GenericValue finAccount,
+            GenericValue userLogin, String finAccountId, Locale locale) {
+        if (finAccount == null) {
+            return UtilProperties.getMessage(RES_ERROR,
+                    "AccountingFinAccountNotFound", UtilMisc.toMap("finAccountId", ""), locale);
+        }
+        if (isAuthorizedToTransactOnFinAccount(security, finAccount, userLogin)) {
+            return null;
+        }
+        String userPartyId = userLogin != null ? userLogin.getString("partyId") : "";
+        Debug.logWarning("Party [" + userPartyId + "] is not authorized to transact on financial account #" + finAccountId, MODULE);
+        return UtilProperties.getMessage(RES_ERROR, "AccountingFinAccountPartyNotAuthorized",
+                UtilMisc.toMap("partyId", userPartyId, "finAccountId", finAccountId), locale);
     }
 
     private static String getLastProductStoreId(Delegator delegator, String finAccountId) {
